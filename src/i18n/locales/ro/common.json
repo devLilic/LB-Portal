@@ -1,0 +1,7 @@
+{
+  "app.title": "Electron + Vite + React",
+  "app.subtitle": "Fundatia starterului este modularizata.",
+  "app.learnMore": "Apasa pe logo-ul Electron + Vite pentru a afla mai multe",
+  "update.check": "Verifica actualizarea",
+  "update.checking": "Se verifica..."
+}

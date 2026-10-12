@@ -1,0 +1,52 @@
+{
+  "name": "default-electron-app-template",
+  "productName": "Default Electron App",
+  "version": "0.1.0",
+  "main": "dist-electron/main/index.js",
+  "description": "Template for modular Electron desktop applications.",
+  "author": "devLilic13",
+  "license": "MIT",
+  "private": true,
+  "debug": {
+    "env": {
+      "VITE_DEV_SERVER_URL": "http://127.0.0.1:7777/"
+    }
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && electron-builder",
+    "init:starter": "node scripts/init/run.mjs",
+    "preview": "vite preview",
+    "test": "npm run test:unit",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "test:unit:watch": "vitest --config vitest.config.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.8.0",
+    "drizzle-orm": "^0.45.1",
+    "electron-updater": "^6.3.9",
+    "i18next": "^25.10.10",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^16.6.6"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.2",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "electron": "^33.2.0",
+    "electron-builder": "^24.13.3",
+    "postcss": "^8.4.49",
+    "postcss-import": "^16.1.0",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.4.2",
+    "vite": "^5.4.11",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6",
+    "vitest": "^2.1.5"
+  }
+}

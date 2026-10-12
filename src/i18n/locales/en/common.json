@@ -1,0 +1,7 @@
+{
+  "app.title": "Electron + Vite + React",
+  "app.subtitle": "Starter foundation is being modularized.",
+  "app.learnMore": "Click on the Electron + Vite logo to learn more",
+  "update.check": "Check update",
+  "update.checking": "Checking..."
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.example.default-electron-app",
+  "asar": true,
+  "directories": {
+    "output": "release/${version}"
+  },
+  "files": [
+    "dist-electron",
+    "dist"
+  ],
+  "extraMetadata": {
+    "main": "dist-electron/main/index.js"
+  },
+  "mac": {
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "target": [
+      "dmg",
+      "zip"
+    ]
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "artifactName": "${productName}-${version}-${arch}.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "deleteAppDataOnUninstall": false
+  },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "YOUR_GITHUB_OWNER",
+      "repo": "YOUR_RELEASE_REPO",
+      "releaseType": "release"
+    }
+  ]
+}

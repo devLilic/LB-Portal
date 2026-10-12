@@ -1,0 +1,5 @@
+{
+  "generic": "Something went wrong.",
+  "network": "A network error occurred.",
+  "unknown": "Unknown error"
+}
