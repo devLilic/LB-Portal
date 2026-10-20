@@ -1,9 +1,9 @@
 {
-  "name": "default-electron-app-template",
-  "productName": "Default Electron App",
+  "name": "lb-portal",
+  "productName": "LB-Portal",
   "version": "0.1.0",
   "main": "dist-electron/main/index.js",
-  "description": "Template for modular Electron desktop applications.",
+  "description": "Bridge between Plasma MOS and LiveBoard.",
   "author": "devLilic13",
   "license": "MIT",
   "private": true,

@@ -7,6 +7,6 @@ export function applyAppSecurity() {
   }
 
   if (process.platform === 'win32') {
-    app.setAppUserModelId(app.getName())
+    app.setAppUserModelId('com.devlilic.lbportal')
   }
 }
