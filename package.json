@@ -20,7 +20,9 @@
     "preview": "vite preview",
     "test": "npm run test:unit",
     "test:unit": "vitest run --config vitest.config.ts",
-    "test:unit:watch": "vitest --config vitest.config.ts"
+    "test:unit:watch": "vitest --config vitest.config.ts",
+    "mock:liveboard": "node scripts/mock-liveboard.mjs",
+    "qa:liveboard": "node scripts/qa-liveboard.cjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.8.0",

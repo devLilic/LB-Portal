@@ -111,6 +111,8 @@ describe('heartbeat scheduler runtime', () => {
           theme: 'system',
           density: 'comfortable',
         },
+        mosMappings: { version: 1, sections: [] },
+        liveBoardConnection: { mode: 'simulation', host: '127.0.0.1', port: null, timeoutMs: 5000 },
       }),
       getSetting: (key) => {
         return (key === 'licensingCache' ? settings.licensingCache : null) as never

@@ -6,6 +6,7 @@ import { registerMainModuleRegistry } from './bootstrap/registerMainModuleRegist
 import { createMainWindow } from './bootstrap/createMainWindow'
 import { bootstrapAppProtection } from './security/appProtection'
 import { applyAppSecurity } from './security/appSecurity'
+import { registerLBPortalIngress } from './ingress/registerLBPortalIngress'
 
 const config = loadConfig()
 
@@ -16,7 +17,7 @@ registerSingleInstance()
 let mainWindow: BrowserWindow | null = null
 
 async function bootstrap() {
-  mainWindow = await createMainWindow()
+  mainWindow = await createMainWindow(config)
 
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -24,6 +25,7 @@ async function bootstrap() {
 }
 
 void registerMainModuleRegistry(config, () => mainWindow)
+registerLBPortalIngress(() => mainWindow)
 registerAppLifecycle(() => mainWindow, bootstrap)
 
 app.whenReady().then(bootstrap)

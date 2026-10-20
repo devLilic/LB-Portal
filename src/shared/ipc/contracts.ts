@@ -102,6 +102,12 @@ export type SettingsValuePayload = {
 
 export type SettingsGetResponse = SettingsValuePayload
 
+export type LiveBoardSettingsDenialCode = 'LIVEBOARD_BUSY' | 'MOS_MAPPINGS_ACTIVE' | 'LIVEBOARD_CONNECTION_ACTIVE' | 'LIVEBOARD_PROJECT_SWITCH_ACTIVE' | 'LIVEBOARD_PROJECT_NOT_FOUND'
+export type SettingsSetResponse = SettingsValuePayload | {
+  ok: false
+  error: { code: LiveBoardSettingsDenialCode; sectionNames: string[] }
+}
+
 export interface IpcInvokeContract {
   [ipcInvokeChannels.appGetInfo]: {
     request: void
@@ -169,7 +175,7 @@ export interface IpcInvokeContract {
   }
   [ipcInvokeChannels.settingsSet]: {
     request: SettingsValuePayload
-    response: SettingsValuePayload
+    response: SettingsSetResponse
   }
 }
 

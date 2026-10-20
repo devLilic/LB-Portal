@@ -6,6 +6,7 @@ import type {
   I18nLanguagePayload,
   I18nResourcePayload,
   I18nSupportedLanguagesPayload,
+  SettingsSetResponse,
   LicensingActivationPayload,
   LicensingActivationResponse,
   LicensingConfirmRebindPayload,
@@ -17,6 +18,9 @@ import type {
 } from '@/shared/ipc/contracts'
 import type { LicenseEntitlementsResult } from '@/shared/licensing/contracts'
 import type { UpdatePreferences, UiPreferences } from '@/shared/settings/types'
+import type { MosMappingConfig } from '@/shared/settings/mosMappings'
+import type { MosProjectsConfig } from '@/shared/settings/mosProjects'
+import type { LiveBoardConnectionSettings } from '@/shared/liveboard/connection'
 import type { ProgressInfo } from 'electron-updater'
 import type { UpdateErrorPayload, UpdateStateEvent, VersionInfo } from './update'
 
@@ -62,8 +66,20 @@ declare global {
       setUpdatePreferences: (value: UpdatePreferences) => Promise<UpdatePreferences>
       getUiPreferences: () => Promise<UiPreferences>
       setUiPreferences: (value: UiPreferences) => Promise<UiPreferences>
+      getMosMappings: () => Promise<MosMappingConfig>
+      getMosProjects: () => Promise<MosProjectsConfig>
+      setMosMappings: (value: MosMappingConfig) => Promise<MosMappingConfig>
+      trySaveMosMappings: (value: MosMappingConfig) => Promise<SettingsSaveAttempt<MosMappingConfig>>
+      trySaveMosProjects: (value: MosProjectsConfig) => Promise<SettingsSaveAttempt<MosProjectsConfig>>
+      getLiveBoardConnection: () => Promise<LiveBoardConnectionSettings>
+      setLiveBoardConnection: (value: LiveBoardConnectionSettings) => Promise<LiveBoardConnectionSettings>
+      trySaveLiveBoardConnection: (value: LiveBoardConnectionSettings) => Promise<SettingsSaveAttempt<LiveBoardConnectionSettings>>
     }
   }
 }
+
+type SettingsSaveAttempt<TValue> =
+  | { ok: true; value: TValue }
+  | { ok: false; error: Extract<SettingsSetResponse, { ok: false }>['error'] }
 
 export {}
