@@ -31,6 +31,8 @@ const expectedHeaders: Record<OnAirCsvFileName, string[]> = {
   'PA_phones.csv': ['Nume', 'Functie', 'Image'],
 }
 
+const optionalTemplateHeaderFiles = new Set<OnAirCsvFileName>(['PA_locations.csv', 'PA_phones.csv'])
+
 export function parseOnAirCsvFile(file: OnAirCsvFileName, bytes: Uint8Array): CsvRow[] {
   let text: string
   try {
@@ -58,7 +60,11 @@ export function parseOnAirCsvFile(file: OnAirCsvFileName, bytes: Uint8Array): Cs
   if (parsed.length === 0) throw new OnAirCsvError(file, 'CSV header row is missing.')
   const header = parsed[0].record
   const required = expectedHeaders[file]
-  if (header.length !== required.length || required.some((cell, index) => cell !== header[index])) {
+  const hasTemplateHeader = optionalTemplateHeaderFiles.has(file)
+    && header.length === required.length + 1
+    && required.every((cell, index) => cell === header[index])
+    && header.at(-1) === 'Template'
+  if ((!hasTemplateHeader && header.length !== required.length) || required.some((cell, index) => cell !== header[index])) {
     throw new OnAirCsvError(file, `Expected header: ${required.join(';')}.`, 1)
   }
 
@@ -70,7 +76,8 @@ export function parseOnAirCsvFile(file: OnAirCsvFileName, bytes: Uint8Array): Cs
     }
     const leadingBlankLines = entry.raw.match(/^(?:[ \t]*\r\n|[ \t]*\r|[ \t]*\n)+/)?.[0]
     const startLine = consumedLineBreaks + 1 + countNewlines(leadingBlankLines ?? '')
-    rows.push({ values: entry.record, record: entry.info.records, line: startLine })
+    const values = optionalTemplateHeaderFiles.has(file) && !hasTemplateHeader ? [...entry.record, ''] : entry.record
+    rows.push({ values, record: entry.info.records, line: startLine })
     consumedLineBreaks += countNewlines(entry.raw)
   }
   return rows
@@ -191,18 +198,18 @@ export function assembleOnAirGroups(
 
   for (const row of locationsRows) {
     if (row.values.every(value => value.trim() === '')) continue
-    const [location] = row.values
+    const [location, template] = row.values
     const group = invitedGroup()
     const source = itemSource('PA_locations.csv', row)
-    group.locations.push({ id: `${group.id}:location:${row.record}`, source, location })
+    group.locations.push({ id: `${group.id}:location:${row.record}`, source, location, template })
   }
 
   for (const row of phonesRows) {
     if (row.values.every(value => value.trim() === '')) continue
-    const [name, role, imagePath] = row.values
+    const [name, role, imagePath, template] = row.values
     const group = invitedGroup()
     const source = itemSource('PA_phones.csv', row)
-    group.phones.push({ id: `${group.id}:phone:${row.record}`, source, name, role, imagePath })
+    group.phones.push({ id: `${group.id}:phone:${row.record}`, source, name, role, imagePath, template })
   }
 
   return groups.map(({ id, name, kind, titles, persons, locations, phones }) => ({ id, name, kind, titles, persons, locations, phones }))

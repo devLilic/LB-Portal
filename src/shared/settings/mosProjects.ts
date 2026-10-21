@@ -1,6 +1,7 @@
 import { emptyMosMappingConfig, validateMosMappings, type MosMappingConfig } from './mosMappings'
 import { validateMosInteractions, type MosInteractionRule } from './mosInteractions'
 import type { OnAirCsvSource } from '../onair/contracts'
+import { validateOnAirMappings, type OnAirDefaultTemplates, type OnAirGraphicMapping } from '../onair/mappings'
 
 export const builtinTelejurnalProjectId = 'builtin-telejurnal'
 export const builtinRetrospectivaProjectId = 'builtin-retrospectiva'
@@ -13,6 +14,8 @@ export interface MosProject {
   mappings: MosMappingConfig
   interactions?: MosInteractionRule[]
   onAirCsv?: OnAirCsvSource
+  onAirMappings?: OnAirGraphicMapping[]
+  onAirDefaultTemplates?: OnAirDefaultTemplates
 }
 export interface MosProjectsConfig {
   version: 2
@@ -57,6 +60,8 @@ export function validateMosProjects(value: unknown): MosProjectsConfig {
     }
     const mappings = validateMosMappings(raw.mappings, { allowEmptySources: kind === 'standalone' })
     const onAirCsv = raw.onAirCsv === undefined ? undefined : validateOnAirCsvSource(raw.onAirCsv)
+    const onAirMappings = raw.onAirMappings === undefined ? undefined : validateOnAirMappings(raw.onAirMappings, mappings)
+    const onAirDefaultTemplates = raw.onAirDefaultTemplates === undefined ? undefined : validateOnAirDefaultTemplates(raw.onAirDefaultTemplates)
     return {
       id: raw.id,
       name: raw.name,
@@ -64,6 +69,8 @@ export function validateMosProjects(value: unknown): MosProjectsConfig {
       mappings,
       ...(raw.interactions === undefined ? {} : { interactions: validateMosInteractions(raw.interactions, mappings) }),
       ...(onAirCsv === undefined ? {} : { onAirCsv }),
+      ...(onAirMappings === undefined ? {} : { onAirMappings }),
+      ...(onAirDefaultTemplates === undefined ? {} : { onAirDefaultTemplates }),
     }
   })
   if (!telejurnal || !retrospectiva) throw new Error('Both built-in MOS projects must be retained.')
@@ -80,6 +87,21 @@ export function validateOnAirCsvSource(value: unknown): OnAirCsvSource {
     throw new Error('OnAir CSV folder path must be a nonempty absolute directory path.')
   }
   return { format: 'pa-csv', folderPath }
+}
+
+export function validateOnAirDefaultTemplates(value: unknown): OnAirDefaultTemplates {
+  if (!isRecord(value)) throw new Error('Invalid OnAir default templates.')
+  const result: OnAirDefaultTemplates = {}
+  for (const kind of ['locations', 'phones'] as const) {
+    if (!(kind in value)) continue
+    if (typeof value[kind] !== 'string') throw new Error(`OnAir default template for ${kind} must be a string.`)
+    const template = value[kind].trim()
+    if (template) result[kind] = template
+  }
+  for (const key of Object.keys(value)) {
+    if (key !== 'locations' && key !== 'phones') throw new Error(`Unsupported OnAir default template kind: ${key}`)
+  }
+  return result
 }
 
 function isAbsoluteDirectoryPath(value: string): boolean {
@@ -136,6 +158,24 @@ export function duplicateMosProject(project: MosProject, name: string, createId:
       })),
     },
     ...(project.onAirCsv === undefined ? {} : { onAirCsv: { ...project.onAirCsv } }),
+    ...(project.onAirMappings === undefined ? {} : {
+      onAirMappings: project.onAirMappings.map(graphicMapping => ({
+        ...graphicMapping,
+        id: createId(),
+        sectionId: sectionIds.get(graphicMapping.sectionId) ?? graphicMapping.sectionId,
+        fields: graphicMapping.fields.map(field => ({
+          ...field,
+          id: createId(),
+          targetFields: Object.fromEntries(Object.entries(field.targetFields).map(([targetId, destinations]) => [
+            targetIds.get(targetId) ?? targetId,
+            [...destinations],
+          ])),
+        })),
+      })),
+    }),
+    ...(project.onAirDefaultTemplates === undefined ? {} : {
+      onAirDefaultTemplates: { ...project.onAirDefaultTemplates },
+    }),
     ...(project.interactions === undefined ? {} : {
       interactions: project.interactions.map(rule => ({
         ...rule,

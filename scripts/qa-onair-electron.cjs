@@ -3,6 +3,7 @@
  * reads or writes operator settings and never connects to LiveBoard hardware.
  */
 const { _electron } = require('playwright')
+const { chromium } = require('@playwright/test')
 const { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, unlinkSync } = require('node:fs')
 const path = require('node:path')
 const os = require('node:os')
@@ -114,7 +115,10 @@ function makeProjects(csvFolder) {
     projects: [
       { id: 'builtin-telejurnal', name: 'Telejurnal', kind: 'telejurnal', mappings: { version: 1, sections: [] } },
       { id: 'builtin-retrospectiva', name: 'Retrospectiva săptămânii', kind: 'retrospectiva', mappings: { version: 1, sections: [] } },
-      { id: 'qa-punctul-pe-azi', name: 'Punctul pe Azi', kind: 'standalone', mappings: { version: 1, sections: [] }, onAirCsv: { format: 'pa-csv', folderPath: csvFolder } },
+      { id: 'qa-punctul-pe-azi', name: 'Punctul pe Azi', kind: 'standalone', mappings: { version: 1, sections: [
+        { id: 'qa-csv-section', name: 'CSV graphics', resumePlayDelayMs: 100, dataPropagationDelayMs: 250, targets: [{ id: 'qa-csv-a', template: 'PA_Title_A' }, { id: 'qa-csv-b', template: 'PA_Title_B' }], sources: [] },
+        { id: 'qa-location-section', name: 'CSV location', resumePlayDelayMs: 100, dataPropagationDelayMs: 250, targets: [{ id: 'qa-location-target', template: 'PA_Location' }], sources: [] },
+      ] }, onAirCsv: { format: 'pa-csv', folderPath: csvFolder } },
     ],
   }
 }
@@ -130,6 +134,35 @@ async function verifyGoodSnapshot(page, projectId) {
   const quotedTitle = state.snapshot.groups.flatMap(group => group.titles).find(item => item.title === 'He said "hello"')
   check(!!quotedTitle, 'CSV escaped quotes should decode into a quote in the title text')
   return state.snapshot
+}
+
+async function captureExistingSettingsPreview() {
+  const screenshotDir = path.join(root, 'node_modules', '.cache', 'onair-qa')
+  const serializedPath = path.join(screenshotDir, 'settings-mappings-static.html')
+  let html = readFileSync(serializedPath, 'utf8')
+  const cssDir = path.join(root, 'dist', 'assets')
+  const cssText = require('node:fs').readdirSync(cssDir).filter(file => file.endsWith('.css')).map(file => readFileSync(path.join(cssDir, file), 'utf8')).join('\n')
+  html = html.replace(/<style>[\s\S]*?<\/style>/i, `<style>${cssText}</style>`)
+  let cardIndex = 0
+  html = html.replace(/<article class="onair-mapping-card"[\s\S]*?<\/article>/g, card => {
+    const targetClass = cardIndex++ === 0 ? 'paired-targets' : 'single-target'
+    return card.replace(/class="onair-field-row(?:\s+[^\"]*)?"/g, `class="onair-field-row ${targetClass}"`)
+  })
+  writeFileSync(serializedPath, html, 'utf8')
+  const browser = await chromium.launch({ headless: true, channel: 'msedge' })
+  try {
+    const previewPage = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+    await previewPage.setContent(html, { waitUntil: 'domcontentloaded' })
+    for (const width of [1280, 640]) {
+      await previewPage.setViewportSize({ width, height: 900 })
+      const layout = await previewPage.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }))
+      assert.ok(layout.scrollWidth <= layout.innerWidth, `Serialized settings preview should fit at ${width}px: ${JSON.stringify(layout)}`)
+      await previewPage.screenshot({ path: path.join(screenshotDir, `settings-mappings-${width}.png`), fullPage: true, timeout: 10000 })
+    }
+    console.log('QA CAPTURE PASS: refreshed styled OnAir mapping editor previews at 1280px and 640px from the saved native DOM.')
+  } finally {
+    await browser.close()
+  }
 }
 
 async function run() {
@@ -181,7 +214,103 @@ async function run() {
 
   await page.locator('.portal-nav button').nth(2).click()
   await page.getByRole('heading', { name: /Mapări MOS|MOS mappings/ }).waitFor()
-  const sourceInput = page.locator('.mos-onair-csv input')
+  await page.locator('.mos-project-selector select').selectOption('qa-punctul-pe-azi')
+  await page.getByLabel(/Template implicit — Locații|Fallback template — Locations/).fill('PA_Location')
+  await page.getByRole('button', { name: /Mapări CSV OnAir|OnAir CSV mappings/ }).click()
+  await page.getByLabel(/Grafic CSV detectat|Detected CSV graphic/).selectOption(JSON.stringify(['titles', '05_Titlu']))
+  await page.getByRole('button', { name: /Adaugă maparea|Add mapping/ }).click()
+  const graphicCard = page.locator('.onair-mapping-card').filter({ hasText: '05_Titlu' })
+  await graphicCard.getByLabel(/Secțiune LiveBoard|LiveBoard section/).selectOption({ label: 'CSV graphics' })
+  await graphicCard.getByRole('button', { name: /Adaugă mapare de câmp|Add field mapping/ }).click()
+  await graphicCard.getByLabel(/Câmp CSV|CSV field/).selectOption('Titlu')
+  await graphicCard.locator('textarea').nth(0).fill('TITLE_A')
+  await graphicCard.locator('textarea').nth(0).press('End')
+  await graphicCard.locator('textarea').nth(0).press('Enter')
+  await graphicCard.locator('textarea').nth(0).type('TITLE_A_SECOND')
+  await graphicCard.locator('textarea').nth(1).fill('TITLE_B')
+  await page.getByLabel(/Grafic CSV detectat|Detected CSV graphic/).selectOption(JSON.stringify(['locations', 'PA_Location']))
+  await page.getByRole('button', { name: /Adaugă maparea|Add mapping/ }).click()
+  const locationCard = page.locator('.onair-mapping-card').filter({ hasText: 'PA_Location' })
+  await locationCard.getByLabel(/Secțiune LiveBoard|LiveBoard section/).selectOption({ label: 'CSV location' })
+  await locationCard.getByRole('button', { name: /Adaugă mapare de câmp|Add field mapping/ }).click()
+  await locationCard.getByLabel(/Câmp CSV|CSV field/).selectOption('Locatie')
+  await locationCard.locator('textarea').fill('LOCATION')
+  await page.getByRole('button', { name: /Salvează setările|Save settings/ }).click()
+  await page.locator('.mos-footer [role="status"]').waitFor()
+  const saveStatus = await page.locator('.mos-footer [role="status"]').innerText()
+  check(/Setările au fost salvate|Settings saved/.test(saveStatus), `OnAir mapping settings should save successfully: ${saveStatus}`)
+  const persistedMapping = await page.evaluate(async () => {
+    const config = await window.settingsApi.getMosProjects()
+    return {
+      pa: config.projects.find(project => project.id === 'qa-punctul-pe-azi')?.onAirMappings,
+      defaults: config.projects.find(project => project.id === 'qa-punctul-pe-azi')?.onAirDefaultTemplates,
+      console: config.projects.find(project => project.id === 'builtin-telejurnal')?.onAirMappings ?? [],
+    }
+  })
+  check(persistedMapping.pa?.length === 2 && persistedMapping.pa.some(mapping => mapping.sourceTemplate === '05_Titlu') && persistedMapping.pa.some(mapping => mapping.kind === 'locations' && mapping.sourceTemplate === 'PA_Location'), 'saving OnAir graphic mappings should persist detected CSV templates to the selected project')
+  check(persistedMapping.pa?.[0].fields[0].sourceField === 'Titlu' && persistedMapping.pa[0].fields[0].targetFields['qa-csv-a']?.[0] === 'TITLE_A' && persistedMapping.pa[0].fields[0].targetFields['qa-csv-a']?.[1] === 'TITLE_A_SECOND' && persistedMapping.pa[0].fields[0].targetFields['qa-csv-b']?.[0] === 'TITLE_B', 'OnAir field mappings should retain a multi-field destination and both LiveBoard targets')
+  const persistedLocation = persistedMapping.pa?.find(mapping => mapping.kind === 'locations')
+  check(persistedMapping.defaults?.locations === 'PA_Location' && persistedLocation?.fields[0].sourceField === 'Locatie' && persistedLocation.fields[0].targetFields['qa-location-target']?.[0] === 'LOCATION', 'location fallback template and prepared Locatie field should persist per project')
+  check(persistedMapping.console.length === 0, 'saving the OnAir mapping must not change another project')
+  await page.locator('.portal-nav button').nth(0).click()
+  await page.locator('.portal-nav button').nth(2).click()
+  await page.locator('.mos-project-selector select').selectOption('qa-punctul-pe-azi')
+  await page.getByRole('button', { name: /Mapări CSV OnAir|OnAir CSV mappings/ }).click()
+  const reopenedCard = page.locator('.onair-mapping-card').filter({ hasText: '05_Titlu' })
+  check(await reopenedCard.count() === 1, 'reopening settings should display the saved CSV graphic mapping')
+  check(await reopenedCard.locator('textarea').nth(0).inputValue() === 'TITLE_A\nTITLE_A_SECOND' && await reopenedCard.locator('textarea').nth(1).inputValue() === 'TITLE_B', 'reopened editor should restore destination field lists')
+  const reopenedLocation = page.locator('.onair-mapping-card').filter({ hasText: 'PA_Location' })
+  check(await reopenedLocation.count() === 1 && await page.getByLabel(/Template implicit — Locații|Fallback template — Locations/).inputValue() === 'PA_Location', 'reopened settings should restore the location mapping and its project fallback')
+  const screenshotDir = path.join(root, 'node_modules', '.cache', 'onair-qa')
+  mkdirSync(screenshotDir, { recursive: true })
+  const serializedDom = await page.locator('.onair-mappings').evaluate(element => {
+    element.querySelectorAll('input,textarea,select').forEach(control => {
+      if (control instanceof HTMLInputElement) control.setAttribute('value', control.value)
+      else if (control instanceof HTMLTextAreaElement) control.textContent = control.value
+      else if (control instanceof HTMLSelectElement) control.querySelectorAll('option').forEach(option => {
+        if (option.value === control.value) option.setAttribute('selected', '')
+        else option.removeAttribute('selected')
+      })
+    })
+    return element.outerHTML
+  })
+  const cssDir = path.join(root, 'dist', 'assets')
+  const cssText = require('node:fs').readdirSync(cssDir).filter(file => file.endsWith('.css')).map(file => readFileSync(path.join(cssDir, file), 'utf8')).join('\n')
+  const staticDom = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${cssText}</style><style>html,body{margin:0;padding:0;width:100%;background:#091321;color:#eaf0fa;font-family:Arial,sans-serif}body{overflow-x:hidden}.mos-settings,.onair-mappings{height:auto!important;max-height:none!important;overflow:visible!important}</style></head><body><section class="mos-settings">${serializedDom}</section></body></html>`
+  const serializedPath = path.join(screenshotDir, 'settings-mappings-static.html')
+  writeFileSync(serializedPath, staticDom, 'utf8')
+  let previewBrowser = null
+  try {
+    previewBrowser = await chromium.launch({ headless: true, channel: 'msedge' })
+    const previewPage = await previewBrowser.newPage({ viewport: { width: 1280, height: 900 } })
+    await previewPage.goto(pathToFileURL(serializedPath).href, { waitUntil: 'domcontentloaded' })
+    for (const width of [1280, 640]) {
+      await previewPage.setViewportSize({ width, height: 900 })
+      const layout = await previewPage.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }))
+      check(layout.scrollWidth <= layout.innerWidth, `Serialized OnAir mapping settings should fit at ${width}px: ${JSON.stringify(layout)}`)
+      await previewPage.screenshot({ path: path.join(screenshotDir, `settings-mappings-${width}.png`), fullPage: true, timeout: 10000 })
+    }
+  } catch (error) {
+    console.warn(`QA NOTE: static Edge screenshots unavailable: ${error.message}`)
+  } finally {
+    await previewBrowser?.close().catch(() => undefined)
+  }
+  for (const width of [1280, 640]) {
+    await page.setViewportSize({ width, height: 900 })
+    const layout = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }))
+    check(layout.scrollWidth <= layout.innerWidth, `OnAir mapping settings should not overflow horizontally at ${width}px: ${JSON.stringify(layout)}`)
+  }
+  await page.locator('.portal-nav button').nth(1).click()
+  await page.getByRole('heading', { name: /OnAir/ }).waitFor()
+  const locationItem = page.locator('.onair-item').filter({ hasText: 'Studioul principal' })
+  await locationItem.locator('.onair-mapping-preview summary').click()
+  const locationPreview = await locationItem.locator('.onair-mapping-preview').innerText()
+  check(locationPreview.includes('PA_Location') && locationPreview.includes('CSV location') && locationPreview.includes('LOCATION') && locationPreview.includes('Studioul principal'), 'OnAir preview should apply the fallback template and prepare the location field value')
+  await page.locator('.portal-nav button').nth(2).click()
+  await page.locator('.mos-project-selector select').selectOption('qa-punctul-pe-azi')
+  await page.locator('.mos-project-selector select').selectOption('builtin-telejurnal')
+
+  const sourceInput = page.getByLabel(/Folder CSV|CSV folder/)
   await sourceInput.fill('C:\\QA\\unsaved-onair-folder')
   await page.locator('.portal-nav button').nth(1).click()
   await page.getByRole('alertdialog').waitFor()
@@ -195,7 +324,7 @@ async function run() {
   check(!afterDiscard.projects.find(project => project.id === 'builtin-telejurnal')?.onAirCsv, 'discarding the settings draft should not persist the typed CSV folder')
   await page.locator('.portal-nav button').nth(2).click()
   await page.getByRole('heading', { name: /Mapări MOS|MOS mappings/ }).waitFor()
-  await page.locator('.mos-onair-csv input').fill('C:\\QA\\discard-to-onair')
+  await page.getByLabel(/Folder CSV|CSV folder/).fill('C:\\QA\\discard-to-onair')
   await page.locator('.portal-nav button').nth(1).click()
   await page.getByRole('alertdialog').waitFor()
   await page.locator('.mos-dialog button').nth(1).click()
@@ -247,7 +376,8 @@ async function run() {
   console.log(`QA PASS: ${checks} isolated OnAir Electron checks; real main/preload API, fictional PA CSV fixtures, snapshot retention/invalidation, renderer remount, and restart persistence. No credentials printed; operator userData and LiveBoard hardware were not used.`)
 }
 
-run().catch(error => {
+const task = process.argv.includes('--capture-only') ? captureExistingSettingsPreview() : run()
+task.catch(error => {
   console.error(`QA FAIL: ${error instanceof Error ? error.message : String(error)}`)
   if (error instanceof Error && error.stack) console.error(error.stack)
   process.exitCode = 1

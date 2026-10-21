@@ -4,7 +4,11 @@
 
 [OnAir CSV](CODEX_ONAIR_CSV.md) descrie importul manual al celor patru exporturi PA, folderul configurat per proiect, selectorul independent și snapshoturile păstrate numai în sesiune. Refresh citește și validează în main, apoi afișează grupurile în renderer prin IPC tipizat. Consultarea CSV nu activează proiectul și nu trimite comenzi LiveBoard. Citiți documentul înainte de modificarea parserului, memoriei sau configurării sursei.
 
-Verificarea OnAir din 21 octombrie 2026: 130 teste relevante și 32 verificări Electron izolate trecute; probe read-only asupra exporturilor reale și QA de renderer separat. Documentul OnAir consemnează cele patru limitări ale suitei generale și comanda de împachetare cu distribuția Electron instalată pentru eroarea locală de redenumire `EPERM`.
+OnAir afișează grupurile în taburi cu Invitați (Platou) primul și supratitlul deasupra titlului. Setările per proiect includ mapări CSV → secțiuni/targeturi/câmpuri LiveBoard, cu chei tip + template sursă și previzualizarea valorilor pregătite. Aceste mapări sunt separate de sursele MOS; resolverul și regulile de validare/duplicare sunt descrise în contractul OnAir și în [editor](CODEX_MOS_MAPPING_EDITOR.md).
+
+Pentru locații și intervenții telefonice, setările includ template-uri implicite per proiect, folosite numai când CSV-ul nu furnizează un `Template` nevid. Catalogul și previzualizarea folosesc aceeași regulă; fișierele originale nu sunt modificate.
+
+Verificarea extinderii OnAir din 21 octombrie 2026: 141 teste relevante, 45 verificări Electron izolate, QA renderer la 640/1280/1920 px și build NSIS trecute. Documentul OnAir consemnează separat rezultatele etapei inițiale, limitările suitei generale, expirarea capturilor native Electron și comanda de împachetare cu distribuția Electron instalată pentru eroarea locală de redenumire `EPERM`.
 
 ## Plasma / LB-Portal ingress contract
 

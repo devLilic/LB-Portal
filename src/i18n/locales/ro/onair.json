@@ -20,6 +20,25 @@
   "emptyValue": "(gol)",
   "imagePath": "Calea imaginii",
   "errorDetail": "Detalii",
+  "groups": {
+    "tablist": "Grupuri OnAir",
+    "invited": "Invitați (Platou)",
+    "invitedEmpty": "Exportul nu conține invitați în platou."
+  },
+  "mappings": {
+    "preview": "Valori LiveBoard",
+    "loading": "Se încarcă mapările salvate…",
+    "templateMissing": "Fără template sursă",
+    "sourceMissing": "Acest element CSV nu are o valoare pentru template-ul sursă.",
+    "templateImplicit": "Template implicit din proiect: {{template}}",
+    "templateImplicitBadge": "Fără template CSV · implicit: {{template}}",
+    "unmapped": "Nu este configurată o mapare LiveBoard pentru acest template sursă.",
+    "missingTemplate": "Secțiunea sau template-ul LiveBoard configurat nu mai există.",
+    "section": "Secțiune",
+    "targetTemplateMissing": "Fără template destinație",
+    "noFields": "Nu sunt mapate câmpuri pentru această destinație.",
+    "settingsUnavailable": "Mapările LiveBoard salvate nu au putut fi încărcate."
+  },
   "snapshot": { "title": "Date OnAir curente" },
   "loadProjectsError": {
     "title": "Proiectele nu au putut fi încărcate",

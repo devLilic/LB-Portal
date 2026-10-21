@@ -6,6 +6,8 @@ OnAir este a treia zonă de lucru din LB-Portal, alături de Consolă și Setăr
 
 În Setări, fiecare proiect poate salva o sursă `onAirCsv` opțională, cu formatul `pa-csv` și `folderPath`. Alegerea unui folder modifică draftul; salvarea este explicită. Ștergerea căii dezactivează sursa. Configurațiile v2 existente și scrierile prin adaptorul v1 rămân compatibile. Copierea unui proiect copiază configurația sursei într-un obiect independent; datele deja încărcate nu se copiază.
 
+Grupurile sunt prezentate în taburi. „Invitați (Platou)” este primul și selectat inițial; apoi urmează beta-urile în ordinea exportului. Dacă exportul nu are grup de invitați, interfața păstrează un tab gol pentru platou, fără să inventeze înregistrări în snapshot. Alegerea manuală a unui beta se păstrează la Refresh dacă grupul continuă să existe. Supratitlul este afișat deasupra titlului.
+
 Folderul de pe calculatorul de dezvoltare pentru Punctul pe Azi este `C:\Projects\_CSV\PA\Export`. Calea este o setare locală a proiectului, nu o constantă de import și nu o cale implicită pentru celelalte proiecte.
 
 ## Cele patru exporturi PA
@@ -33,13 +35,29 @@ Importatorul verifică metadatele fișierelor înainte și după citire și reia
 
 Filesystemul și parserul aparțin Electron main. Preload expune numai operații tipizate pentru lista proiectelor, alegerea folderului, snapshot și Refresh după ID de proiect. Main rezolvă calea din setările salvate și validează expeditorul IPC. Rendererul nu primește API Node sau citire arbitrară de fișiere. Fotografiile sunt deocamdată reprezentate prin calea text, fără încărcare de URL-uri din CSV.
 
-Această etapă încarcă și afișează datele. `Template` este păstrat ca valoare sursă; nu reprezintă automat un content LiveBoard sau o mapare validată. Operarea ulterioară necesită mapări explicite ale tipului/template-ului sursă către secțiuni, destinații și câmpuri. Locațiile și intervențiile nu au template în export.
+`Template` este cheia sursă a graficii, păstrată exact din CSV. În Setări → proiect → Mapări CSV OnAir, operatorul selectează un tip și template detectat în importul deja încărcat, alege secțiunea LiveBoard și configurează câmpurile pentru fiecare destinație A/B existentă. Consultarea catalogului folosește numai memoria; exporturile se citesc în continuare exclusiv prin Refresh în OnAir. Nu se presupune că numele template-ului CSV este și numele contentului LiveBoard.
+
+Mapările sunt salvate în proprietatea opțională `onAirMappings` a proiectului. Cheia unei mapări este perechea tip de element + nume template efectiv; destinațiile sunt referințe la secțiunile și targeturile proiectului. Parametrii disponibili sunt `Titlu`/`Supratitlu`, `Nume`/`Functie`, `Locatie`, respectiv `Nume`/`Functie`/`Image`. O valoare sursă poate alimenta mai multe câmpuri destinație. Șirurile goale se păstrează ca valori valide. Resolverul comun produce template-urile și valorile câmpurilor LiveBoard, afișate în OnAir pentru verificare.
+
+Mapările nu sunt surse MOS și nu modifică resolverul receiverului Plasma. Proiectele existente fără această proprietate rămân valide; adaptorul legacy o păstrează. Duplicarea proiectului copiază configurația cu identificatori noi și referințe refăcute către propriile secțiuni/targeturi. Destinațiile referite nu pot fi eliminate lăsând mapări orfane. Salvarea exclusivă a mapărilor OnAir păstrează runtime-ul și temporizatoarele existente.
+
+Pentru locații și intervenții, proiectul poate configura `onAirDefaultTemplates: { locations?: string, phones?: string }` în setările sursei CSV. Aceste nume manuale se folosesc când înregistrarea nu furnizează un `Template` nevid. Un nume primit din CSV are prioritate și se păstrează exact. Parserul acceptă și coloana suplimentară `Template` la finalul antetului acestor exporturi, păstrând compatibilitatea cu fișierele vechi. Dacă lipsesc și valoarea CSV, și configurația implicită, se afișează un diagnostic explicit; nu se inventează nume.
+
+Template-ul efectiv este folosit atât în catalogul editorului, cât și în badge-ul elementului și în resolver. Înregistrările din snapshot păstrează valorile originale ale CSV-ului; modificarea template-ului implicit nu recitește fișierele și nu invalidează importul. Configurația implicită aparține proiectului și se copiază independent la duplicare.
 
 OnAir nu produce cereri MOS simulate și nu activează proiecte. Contractul HTTP Plasma, autentificarea, CORS, confirmările, controllerul și comenzile TCP LBC rămân cele descrise în [contractul ingress](CODEX_PLASMA_INGRESS_CONTRACT.md). Nu se introduce OSCon/OSC.
 
 ## Verificare
 
 Testele acoperă parserul, grupurile, izolarea proiectelor, păstrarea snapshotului la eșec, schimbarea sursei și răspunsurile întârziate, configurația salvată și navigarea cu draft nesalvat. Build-ul verifică integrarea main/preload/renderer. Probele nu confirmă output video fizic pe LiveBoard.
+
+### Extindere: taburi, mapări și template-uri implicite — 21 octombrie 2026
+
+- **141 teste relevante trecute în 22 fișiere**, pentru OnAir, setări, LiveBoard, ingress și i18n. Include maparea după tip/template exact, validarea referințelor, duplicarea independentă, valori goale și multiple câmpuri destinație, prioritizarea CSV față de template-ul implicit și persistența configurației. Regresia de controller confirmă că salvarea exclusivă a sursei/mapărilor/defaulturilor păstrează grafica ON, câmpurile și temporizarea, fără comenzi suplimentare.
+- **QA renderer Edge trecut** la 640/1280/1920 px: Invitați primul și selectat inițial, ordinea și navigarea din tastatură a taburilor, păstrarea selecției la Refresh, supratitlu deasupra titlului, cele patru tipuri de valori pregătite, template implicit pentru locații/intervenții și prioritatea valorii CSV. Capturile Invitați și Beta au fost revizuite vizual, fără scroll orizontal. Fișierele sunt în cache-ul ignorat `node_modules/.cache/onair-qa/`.
+- **45 verificări Electron izolate trecute**: include salvarea/redeschiderea mapărilor per proiect, introducerea cu Enter a mai multor câmpuri destinație, template-ul implicit pentru locații și valorile pregătite în OnAir. Verificările de lățime la 640/1280 px au trecut. Captura nativă Electron a expirat în acest mediu; capturarea este opțională și nu este raportată ca succes nativ.
+- Editorul de mapări a fost revizuit separat la 640/1280 px în Edge, folosind DOM-ul serializat din proba Electron și CSS-ul compilat, cu valorile formularelor păstrate. Capturile `settings-mappings-{640,1280}.png` includ destinații simple și A/B; grila se adaptează la numărul destinațiilor. `node scripts/qa-onair-electron.cjs --capture-only` reface aceste capturi din fixture-ul HTML salvat în cache, fără pornirea aplicației native. Această probă statică verifică afișarea, iar proba Electron verifică interacțiunile și persistența.
+- **Build TypeScript/Vite/NSIS trecut**, cu distribuția Electron instalată și comanda documentată mai jos. Installerul actualizat este `release/0.1.0/LB-Portal-0.1.0-x64.exe`. Probele folosesc configurații și exporturi fictive în profil temporar.
 
 ### Rezultate — 21 octombrie 2026
 

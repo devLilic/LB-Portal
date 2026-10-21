@@ -73,6 +73,17 @@ describe('OnAir PA CSV parsing', () => {
     expect(() => parseOnAirCsvFile('PA_titles.csv', Buffer.from('Nr;Titlu;Template\n'))).toThrowError(OnAirCsvError)
   })
 
+  it('retains optional Location and Phone templates and supplies empty values for older CSV headers', () => {
+    const oldLocations = parseOnAirCsvFile('PA_locations.csv', Buffer.from('Locatie\nChișinău\n'))
+    const newLocations = parseOnAirCsvFile('PA_locations.csv', Buffer.from('Locatie;Template\nChișinău;03_Locatie\n'))
+    const oldPhones = parseOnAirCsvFile('PA_phones.csv', Buffer.from('Nume;Functie;Image\nTelefon;Reporter;C:\\img\\a.jpg\n'))
+    const newPhones = parseOnAirCsvFile('PA_phones.csv', Buffer.from('Nume;Functie;Image;Template\nTelefon;Reporter;C:\\img\\a.jpg;04_Telefon\n'))
+    expect(oldLocations[0]?.values).toEqual(['Chișinău', ''])
+    expect(newLocations[0]?.values).toEqual(['Chișinău', '03_Locatie'])
+    expect(oldPhones[0]?.values).toEqual(['Telefon', 'Reporter', 'C:\\img\\a.jpg', ''])
+    expect(newPhones[0]?.values).toEqual(['Telefon', 'Reporter', 'C:\\img\\a.jpg', '04_Telefon'])
+  })
+
   it('records physical source lines across blank rows and multiline values', () => {
     const csv = 'Nr;Titlu;Supratitlu;Template\r\n\r\n1;"Prima\r\na doua";;T\r\n'
     const row = parseOnAirCsvFile('PA_titles.csv', Buffer.from(csv))[0]

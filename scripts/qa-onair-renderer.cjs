@@ -40,9 +40,43 @@ const snapshot = (project, groupName, loadedAt) => ({
       role: 'Analist invitat',
       template: '05_Titlu_Ultima_Ora',
     }],
-    locations: [{ id: `${project.id}-location`, source: { file: 'Locations.csv', record: 2, line: 3 }, location: 'Chișinău\nRepublica Moldova' }],
-    phones: [{ id: `${project.id}-phone`, source: { file: 'Phones.csv', record: 2, line: 3 }, name: 'Intervenție telefonică', role: 'Reporter', imagePath: 'C:\\assets\\phone\\reporter image.png' }],
+    locations: [
+      { id: `${project.id}-location`, source: { file: 'Locations.csv', record: 2, line: 3 }, template: '', location: 'Chișinău\nRepublica Moldova' },
+      { id: `${project.id}-location-csv-template`, source: { file: 'Locations.csv', record: 3, line: 4 }, template: '05_Titlu_Ultima_Ora', location: 'Bălți' },
+    ],
+    phones: [{ id: `${project.id}-phone`, source: { file: 'Phones.csv', record: 2, line: 3 }, template: '   ', name: 'Intervenție telefonică', role: 'Reporter', imagePath: 'C:\\assets\\phone\\reporter image.png' }],
+  }, {
+    id: `${project.id}-beta`, name: 'Beta 7 - Subiecte ale zilei', kind: 'beta',
+    titles: [{ id: `${project.id}-beta-title`, source: { file: 'Titles.csv', record: 5, line: 6 }, nr: '07', title: 'Titlu din grupul Beta', supratitle: '', template: '' }],
+    persons: [], locations: [], phones: [],
   }],
+})
+
+const mosProject = (projectId, targetTemplate) => ({
+  id: projectId, name: projectId, kind: 'standalone',
+  mappings: { version: 1, sections: [{ id: 'qa-section', name: 'QA OnAir section', targets: [{ id: 'qa-target', template: targetTemplate }], resumePlayDelayMs: 0, sources: [] }] },
+  onAirDefaultTemplates: { locations: 'QA_Location_Default', phones: 'QA_Phone_Default' },
+  onAirMappings: [
+    { id: 'qa-map-title', kind: 'titles', sourceTemplate: '05_Titlu_Ultima_Ora', sectionId: 'qa-section', fields: [
+      { id: 'qa-field-title', sourceField: 'Titlu', targetFields: { 'qa-target': ['F_TEXT'] } },
+      { id: 'qa-field-super', sourceField: 'Supratitlu', targetFields: { 'qa-target': ['F_SUPRA'] } },
+    ] },
+    { id: 'qa-map-person', kind: 'persons', sourceTemplate: '05_Titlu_Ultima_Ora', sectionId: 'qa-section', fields: [
+      { id: 'qa-field-name', sourceField: 'Nume', targetFields: { 'qa-target': ['F_NAME'] } },
+      { id: 'qa-field-role', sourceField: 'Functie', targetFields: { 'qa-target': ['F_ROLE'] } },
+    ] },
+    { id: 'qa-map-location-default', kind: 'locations', sourceTemplate: 'QA_Location_Default', sectionId: 'qa-section', fields: [
+      { id: 'qa-field-location-default', sourceField: 'Locatie', targetFields: { 'qa-target': ['F_LOCATION'] } },
+    ] },
+    { id: 'qa-map-location-csv', kind: 'locations', sourceTemplate: '05_Titlu_Ultima_Ora', sectionId: 'qa-section', fields: [
+      { id: 'qa-field-location', sourceField: 'Locatie', targetFields: { 'qa-target': ['F_LOCATION'] } },
+    ] },
+    { id: 'qa-map-phone', kind: 'phones', sourceTemplate: 'QA_Phone_Default', sectionId: 'qa-section', fields: [
+      { id: 'qa-field-phone-name', sourceField: 'Nume', targetFields: { 'qa-target': ['F_NAME'] } },
+      { id: 'qa-field-phone-role', sourceField: 'Functie', targetFields: { 'qa-target': ['F_ROLE'] } },
+      { id: 'qa-field-phone-image', sourceField: 'Image', targetFields: { 'qa-target': ['F_IMAGE'] } },
+    ] },
+  ],
 })
 
 async function main() {
@@ -71,7 +105,7 @@ async function main() {
   const baseUrl = process.env.LB_PORTAL_QA_URL || `http://127.0.0.1:${address.port}`
   qaBrowser = await chromium.launch({ headless: true, channel: process.env.LB_PORTAL_QA_BROWSER_CHANNEL || 'msedge' })
   const page = await qaBrowser.newPage({ viewport: { width: 1280, height: 900 } })
-  await page.addInitScript(({ first, second, firstSnapshot, secondSnapshot }) => {
+  await page.addInitScript(({ first, second, firstSnapshot, secondSnapshot, firstSettings, secondSettings }) => {
     const config = {
       environment: 'development', appName: 'LB-Portal',
       features: { i18n: true, autoUpdate: false, appProtection: false, licensing: false, database: false, logging: true },
@@ -79,6 +113,7 @@ async function main() {
     }
     window.appApi = { getConfig: () => config }
     window.i18nApi = { getCurrentLanguage: async () => ({ language: 'en' }) }
+    window.settingsApi = { getMosProjects: async () => ({ version: 2, activeProjectId: first.id, projects: [firstSettings, secondSettings] }) }
     window.lbPortalApi = {
       getInfo: async () => ({ status: 'online', urls: [], accessKey: 'qa-key' }),
       getRequests: async () => [],
@@ -113,6 +148,8 @@ async function main() {
       refresh: async (id) => {
         window.__onAirCalls.refresh++
         return window.__onAirCalls.refresh === 1
+          ? { projectId: id, folderPath: second.folderPath, snapshot: { ...window.__secondSnapshot, loadedAt: '2026-10-21T12:05:00.000Z' }, error: null, busy: false }
+          : window.__onAirCalls.refresh === 2
           ? { projectId: id, folderPath: second.folderPath, snapshot: null, error: { code: 'SOURCE_CHANGED' }, busy: false }
           : { projectId: id, folderPath: second.folderPath, snapshot: null, error: { code: 'INVALID_CSV', file: 'Titles.csv', record: 3, detail: 'Quoted header is missing' }, busy: false }
       },
@@ -123,6 +160,8 @@ async function main() {
   }, {
     first: projectOne,
     second: projectTwo,
+    firstSettings: mosProject(projectOne.id, 'QA_Project_One_Template'),
+    secondSettings: mosProject(projectTwo.id, 'QA_Project_Two_Template'),
     firstSnapshot: snapshot(projectOne, 'Telejurnal only data', '2026-10-21T11:00:00.000Z'),
     secondSnapshot: snapshot(projectTwo, 'Invitați și subiecte de actualitate', '2026-10-21T12:00:00.000Z'),
   })
@@ -136,7 +175,55 @@ async function main() {
   await page.waitForTimeout(150)
   assert.equal(await page.locator('.onair-group-heading h3').getByText('Invitați și subiecte de actualitate', { exact: true }).count(), 1)
   assert.equal(await page.getByText('Telejurnal only data', { exact: true }).count(), 0)
-  await page.getByText('2 titles', { exact: true }).waitFor()
+  await page.getByText('3 titles', { exact: true }).waitFor()
+  const tabs = page.getByRole('tab')
+  assert.equal(await tabs.nth(0).getAttribute('aria-selected'), 'true', 'the invited tab should be selected by default')
+  assert.equal(await tabs.nth(0).innerText(), 'Guests (Studio)')
+  await tabs.nth(1).click()
+  await page.getByText('Beta 7 - Subiecte ale zilei', { exact: true }).waitFor()
+  assert.equal(await page.getByRole('tab').nth(1).innerText(), 'Beta 7', 'Beta tab labels should retain the source marker number')
+  assert.equal(await page.locator('.onair-template-missing').count(), 1, 'missing source templates should be called out')
+  await page.locator('.onair-mapping-preview summary').click()
+  await page.getByText('This CSV item has no source template value.', { exact: true }).waitFor()
+  await tabs.nth(1).press('ArrowLeft')
+  assert.equal(await tabs.nth(0).getAttribute('aria-selected'), 'true', 'ArrowLeft should select the previous tab')
+  await tabs.nth(0).press('ArrowRight')
+  assert.equal(await tabs.nth(1).getAttribute('aria-selected'), 'true', 'ArrowRight should select the next tab')
+  await tabs.nth(1).press('Home')
+  assert.equal(await tabs.nth(0).getAttribute('aria-selected'), 'true', 'Home should select the first tab')
+  await tabs.nth(0).press('End')
+  assert.equal(await tabs.nth(1).getAttribute('aria-selected'), 'true', 'End should select the last tab')
+  await tabs.nth(0).click()
+  const titleItem = page.locator('.onair-item').filter({ hasText: 'Un titlu de test suficient' }).first()
+  assert.equal(await page.locator('.onair-template').count(), 6, 'each item type should display its source template')
+  const titleOrder = await titleItem.evaluate(element => ({ supertitle: element.querySelector('.onair-supertitle')?.compareDocumentPosition(element.querySelector('.onair-title-copy strong')) }))
+  assert.ok((titleOrder.supertitle & 4) !== 0, 'supratitlu should precede the title in the DOM')
+  await titleItem.locator('.onair-mapping-preview summary').click()
+  assert.equal(await titleItem.locator('.onair-resolved-target > strong').first().innerText(), 'QA_Project_Two_Template', 'mapping previews should use the selected project configuration')
+  await titleItem.getByText('F_TEXT', { exact: true }).waitFor()
+  assert.match(await titleItem.locator('.onair-resolved-target dd').first().innerText(), /Un titlu de test suficient de lung/)
+  const emptyTitleItem = page.locator('.onair-item').filter({ hasText: 'Al doilea titlu' })
+  await emptyTitleItem.locator('.onair-mapping-preview summary').click()
+  await emptyTitleItem.getByText('F_SUPRA', { exact: true }).waitFor()
+  await emptyTitleItem.getByText('(empty)', { exact: true }).waitFor()
+  const personItem = page.locator('.onair-item').filter({ hasText: 'Nume invitat cu text lung' }).first()
+  await personItem.locator('.onair-mapping-preview summary').click()
+  assert.equal(await personItem.locator('.onair-resolved-target dd').nth(1).innerText(), 'Analist invitat')
+  const locationItem = page.locator('.onair-item').filter({ hasText: 'Republica Moldova' }).first()
+  assert.match(await locationItem.locator('.onair-template').innerText(), /CSV template missing.*QA_Location_Default/)
+  await locationItem.locator('.onair-mapping-preview summary').click()
+  await locationItem.getByText('Project default template: QA_Location_Default', { exact: true }).waitFor()
+  assert.equal(await locationItem.locator('.onair-resolved-target dd').first().innerText(), 'Chișinău\nRepublica Moldova')
+  const locationOverride = page.locator('.onair-item').filter({ hasText: 'Bălți' }).first()
+  assert.equal(await locationOverride.locator('.onair-template').innerText(), '05_Titlu_Ultima_Ora', 'a CSV template should override the configured location default')
+  await locationOverride.locator('.onair-mapping-preview summary').click()
+  assert.equal(await locationOverride.locator('.onair-resolved-target dd').first().innerText(), 'Bălți')
+  const phoneItem = page.locator('.onair-item').filter({ hasText: 'Intervenție telefonică' }).first()
+  assert.match(await phoneItem.locator('.onair-template').innerText(), /CSV template missing.*QA_Phone_Default/)
+  await phoneItem.locator('.onair-mapping-preview summary').click()
+  await phoneItem.getByText('Project default template: QA_Phone_Default', { exact: true }).waitFor()
+  assert.equal(await phoneItem.locator('.onair-resolved-target dd').nth(1).innerText(), 'Reporter')
+  assert.equal(await phoneItem.locator('.onair-resolved-target dd').nth(2).innerText(), 'C:\\assets\\phone\\reporter image.png')
   const counts = await page.evaluate(() => ({ ...window.__onAirCalls }))
   assert.ok(counts.listProjects >= 1, 'OnAir should request the saved project list when it opens')
   assert.equal(counts.refresh, 0, 'opening OnAir must not refresh the CSV export')
@@ -149,6 +236,10 @@ async function main() {
     const dimensions = await page.evaluate(() => ({ viewport: window.innerWidth, document: document.documentElement.scrollWidth }))
     assert.ok(dimensions.document <= dimensions.viewport, `horizontal overflow at ${width}px: ${JSON.stringify(dimensions)}`)
   }
+  await page.getByRole('tab', { name: 'Beta 7' }).click()
+  await page.locator('.onair-mapping-preview summary').click()
+  await page.screenshot({ path: path.join(outputDir, 'onair-beta-1280.png'), fullPage: true })
+  await page.getByRole('tab', { name: 'Guests (Studio)' }).click()
   await page.evaluate(() => { window.__busyResponsesRemaining = 3 })
   await page.getByRole('button', { name: 'Console', exact: true }).click()
   await page.getByRole('button', { name: 'OnAir', exact: true }).click()
@@ -156,6 +247,10 @@ async function main() {
   await page.waitForFunction(() => !document.querySelector('.onair-refresh')?.disabled)
   assert.ok((await page.evaluate(() => window.__onAirCalls.snapshots.filter(id => id === 'qa-two').length)) >= 5, 'busy snapshots must be polled until the read becomes idle')
   assert.equal((await page.evaluate(() => window.__onAirCalls.refresh)), 0, 'polling a busy snapshot must not trigger a CSV refresh')
+  await page.getByRole('tab', { name: 'Beta 7' }).click()
+  await page.getByRole('button', { name: 'Refresh CSV' }).click()
+  await page.waitForFunction(() => document.querySelector('[role="tab"][aria-selected="true"]')?.textContent === 'Beta 7')
+  await page.getByRole('tab', { name: 'Guests (Studio)' }).click()
   await page.getByRole('button', { name: 'Refresh CSV' }).click()
   await page.getByRole('alert').getByText('Export source changed', { exact: true }).waitFor()
   assert.equal(await page.getByText('Un titlu de test suficient de lung', { exact: false }).count(), 0, 'a source change must clear the previous snapshot')

@@ -20,6 +20,25 @@
   "emptyValue": "(empty)",
   "imagePath": "Image path",
   "errorDetail": "Details",
+  "groups": {
+    "tablist": "OnAir groups",
+    "invited": "Guests (Studio)",
+    "invitedEmpty": "No studio guests are present in this export."
+  },
+  "mappings": {
+    "preview": "LiveBoard values",
+    "loading": "Loading saved mappings…",
+    "templateMissing": "No source template",
+    "sourceMissing": "This CSV item has no source template value.",
+    "templateImplicit": "Project default template: {{template}}",
+    "templateImplicitBadge": "CSV template missing · default: {{template}}",
+    "unmapped": "No LiveBoard mapping is configured for this source template.",
+    "missingTemplate": "The configured LiveBoard section or target is missing.",
+    "section": "Section",
+    "targetTemplateMissing": "No destination template",
+    "noFields": "No destination fields are mapped.",
+    "settingsUnavailable": "Saved LiveBoard mappings could not be loaded."
+  },
   "snapshot": { "title": "Current OnAir data" },
   "loadProjectsError": {
     "title": "Projects could not be loaded",

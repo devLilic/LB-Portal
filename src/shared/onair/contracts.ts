@@ -1,4 +1,5 @@
 import type { MosProjectKind } from '../settings/mosProjects'
+export type { OnAirDefaultTemplates, OnAirGraphicFieldMapping, OnAirGraphicKind, OnAirGraphicMapping, OnAirGraphicMappingIssue, OnAirGraphicResolution } from './mappings'
 
 export interface OnAirCsvSource {
   format: 'pa-csv'
@@ -38,12 +39,14 @@ export interface OnAirPerson extends OnAirItem {
 
 export interface OnAirLocation extends OnAirItem {
   location: string
+  template: string
 }
 
 export interface OnAirPhone extends OnAirItem {
   name: string
   role: string
   imagePath: string
+  template: string
 }
 
 export type OnAirGroupKind = 'beta' | 'invited' | 'ungrouped' | 'other'

@@ -38,6 +38,10 @@ După o schimbare permisă, controllerul pornește starea noului proiect de la O
 
 Proiectele pot include opțional `onAirCsv: { format: 'pa-csv', folderPath: string }`, conform [contractului OnAir CSV](CODEX_ONAIR_CSV.md). Sursa se salvează în proiect și se păstrează la redenumire, duplicare și actualizarea mapărilor prin adaptorul legacy. Versiunea configurației rămâne 2; proiectele fără sursă rămân valide. Datele importate sunt separate după ID și trăiesc numai în memoria sesiunii. Selectorul OnAir inspectează un proiect fără să schimbe proiectul activ al controllerului.
 
+Proprietatea opțională `onAirMappings` leagă tipurile și template-urile CSV de secțiunile, targeturile și câmpurile LiveBoard. Configurația se validează și se salvează în proiect; duplicarea remapează ID-urile și referințele, iar adaptorul v1 o păstrează. Aceste mapări de date sunt independente de sursele MOS și nu constituie o activare sau execuție LiveBoard.
+
+`onAirDefaultTemplates` configurează opțional câte un nume pentru locații și intervenții telefonice fără template în CSV. Valorile CSV au prioritate. Configurația se păstrează la scrierile legacy și se copiază independent la duplicare, fără schimbarea snapshotului sau a runtime-ului.
+
 Setarea locală `mosMappings` are configurația canonică versionată `2`: `activeProjectId` și lista `projects`. Fiecare proiect conține `id`, `name`, `kind` și propriul obiect `mappings`, cu structura existentă de secțiuni versionată `1`.
 
 Citirea unei configurații vechi, plate, o adaptează în memorie: toate secțiunile și identificatorii lor devin mapările proiectului Telejurnal; Retrospectiva este goală. Numele tehnice, câmpurile, valorile și timpii nu sunt rescriși. Configurația în formatul nou este păstrată la salvare. Un fișier corupt nu este înlocuit prin presupunerea unei configurații goale.

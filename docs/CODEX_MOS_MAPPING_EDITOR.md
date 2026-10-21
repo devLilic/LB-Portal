@@ -2,6 +2,10 @@
 
 ## Current scope
 
+The per-project **Mapări CSV OnAir** tab configures mappings separately from MOS sources. It discovers graphic type/template pairs from the already-loaded OnAir snapshot, resolves them to existing sections and A/B target templates, and maps CSV fields to one or more LiveBoard fields per target. Source template names remain those exported by csvEditor-PA. Saving follows the normal project draft/validation flow and does not execute graphics. See [OnAir CSV](CODEX_ONAIR_CSV.md) for supported CSV parameters, validation, duplication and the value preview.
+
+The CSV source panel also configures project-specific default templates for locations and phone interventions whose rows have no template. A nonblank CSV template always takes precedence. The detected-source catalog and OnAir preview use the same effective-template helper; changing defaults in the draft immediately updates the catalog without rereading CSVs.
+
 The project editor now separates Sections from [Interactions](CODEX_SECTION_INTERACTIONS.md). Section configuration groups destinations/buffers, timing and source field/exit settings; project rules select existing sections and ordered lifecycle actions. The wider responsive page keeps the edited project separate from the active runtime selection. A rule's automatic return uses the existing source duration, without a second duration field.
 
 The Settings / MOS mappings page configures the [LiveBoard execution controller](CODEX_LIVEBOARD_EXECUTION.md). Saving settings does not play a template. If a save is blocked by active sections, the editor stops each affected section through the regular controller queue and retries once; failures keep the draft and show an error. Accepted mapped MOS PLAYs execute in simulation by default, or through manually connected LBC TCP. The console remains available in its own tab; the HTTP envelope and receipt acknowledgement remain unchanged.

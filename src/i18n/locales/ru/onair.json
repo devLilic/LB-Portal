@@ -20,6 +20,25 @@
   "emptyValue": "(пусто)",
   "imagePath": "Путь к изображению",
   "errorDetail": "Подробности",
+  "groups": {
+    "tablist": "Группы OnAir",
+    "invited": "Гости (Студия)",
+    "invitedEmpty": "В этом экспорте нет гостей в студии."
+  },
+  "mappings": {
+    "preview": "Данные LiveBoard",
+    "loading": "Загрузка сохранённых сопоставлений…",
+    "templateMissing": "Нет исходного шаблона",
+    "sourceMissing": "В этой строке CSV не указано значение исходного шаблона.",
+    "templateImplicit": "Шаблон по умолчанию в проекте: {{template}}",
+    "templateImplicitBadge": "В CSV нет шаблона · используется: {{template}}",
+    "unmapped": "Для этого исходного шаблона не настроено сопоставление LiveBoard.",
+    "missingTemplate": "Настроенный раздел или шаблон LiveBoard не найден.",
+    "section": "Раздел",
+    "targetTemplateMissing": "Нет шаблона назначения",
+    "noFields": "Поля назначения не сопоставлены.",
+    "settingsUnavailable": "Не удалось загрузить сохранённые сопоставления LiveBoard."
+  },
   "snapshot": { "title": "Текущие данные OnAir" },
   "loadProjectsError": {
     "title": "Не удалось загрузить проекты",

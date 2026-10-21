@@ -4,7 +4,11 @@ This document defines the HTTP ingress contract shared by Plasma and LB-Portal. 
 
 ## Current scope
 
-The separate [OnAir CSV workspace](CODEX_ONAIR_CSV.md) reads PA exports manually from a folder saved per project. Its project selector is independent of the execution project; reading or inspecting CSVs does not activate projects or execute graphics. CSV source templates are retained as data for future explicit mappings. This workspace adds typed local IPC, without changing the Plasma HTTP envelope, authentication, CORS, acknowledgements or TCP LBC protocol.
+The separate [OnAir CSV workspace](CODEX_ONAIR_CSV.md) reads PA exports manually from a folder saved per project. Its project selector is independent of the execution project; reading or inspecting CSVs does not activate projects or execute graphics. CSV source templates are retained as keys for explicit per-project mappings. This workspace adds typed local IPC, without changing the Plasma HTTP envelope, authentication, CORS, acknowledgements or TCP LBC protocol.
+
+OnAir now configures explicit per-project CSV mappings by graphic type and source template. The mapping resolver prepares existing section/target templates and field values for preview; it does not submit a MOS request, activate a project or run the controller. These data mappings remain separate from MOS source mappings and do not broaden Plasma execution to standalone projects.
+
+Locations and phone interventions may use a per-project default template when their CSV row has no nonblank `Template`. A nonblank CSV value takes precedence and is preserved exactly. This local default is applied consistently in the mapping catalog and value preview; it does not change the Plasma request schema.
 
 LB-Portal is the bridge between Plasma and LiveBoard: Plasma sends authenticated HTTP requests to LB-Portal, and real LiveBoard commands use only TCP with the four LBControl `LBC_` commands documented in [the protocol contract](CODEX_LIVEBOARD_PROTOCOL.md), after manual connection. The default no-socket simulation is for offline verification only. Plasma must not connect directly to LiveBoard; OSCon/OSC is retired and must not be used for this integration. HTTP receipt remains distinct from execution and on-air output.
 
