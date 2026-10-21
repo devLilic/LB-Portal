@@ -8,6 +8,8 @@ OnAir afișează grupurile în taburi cu Invitați (Platou) primul și supratitl
 
 Pentru locații și intervenții telefonice, setările includ template-uri implicite per proiect, folosite numai când CSV-ul nu furnizează un `Template` nevid. Catalogul și previzualizarea folosesc aceeași regulă; fișierele originale nu sunt modificate.
 
+Titlurile folosesc o coloană comună pentru numărul original CSV, într-un chenar rotunjit cât înălțimea blocului, și aliniază supratitlul/titlul la aceeași margine. Bara fixă de instrumente din stânga oferă Refresh CSV și la capătul listelor lungi, prin aceeași operație existentă; detaliile sunt în contractul OnAir.
+
 Verificarea extinderii OnAir din 21 octombrie 2026: 141 teste relevante, 45 verificări Electron izolate, QA renderer la 640/1280/1920 px și build NSIS trecute. Documentul OnAir consemnează separat rezultatele etapei inițiale, limitările suitei generale, expirarea capturilor native Electron și comanda de împachetare cu distribuția Electron instalată pentru eroarea locală de redenumire `EPERM`.
 
 ## Plasma / LB-Portal ingress contract

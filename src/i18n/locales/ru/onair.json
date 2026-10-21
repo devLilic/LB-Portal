@@ -15,6 +15,7 @@
   "noSnapshot": "Данных ещё не удалось загрузить",
   "refresh": "Обновить CSV",
   "refreshing": "Обновление…",
+  "tools": { "label": "Инструменты OnAir", "refresh": "Обновить экспорт CSV" },
   "record": "запись {{record}}",
   "unnamedGroup": "Группа без названия",
   "emptyValue": "(пусто)",

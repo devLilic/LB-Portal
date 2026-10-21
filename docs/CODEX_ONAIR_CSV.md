@@ -8,6 +8,10 @@ OnAir este a treia zonă de lucru din LB-Portal, alături de Consolă și Setăr
 
 Grupurile sunt prezentate în taburi. „Invitați (Platou)” este primul și selectat inițial; apoi urmează beta-urile în ordinea exportului. Dacă exportul nu are grup de invitați, interfața păstrează un tab gol pentru platou, fără să inventeze înregistrări în snapshot. Alegerea manuală a unui beta se păstrează la Refresh dacă grupul continuă să existe. Supratitlul este afișat deasupra titlului.
 
+Titlurile au o coloană comună pentru numărul `Nr` și un bloc de text cu supratitlul deasupra titlului, ambele aliniate la aceeași margine stângă. Numărul este afișat o singură dată pentru întregul set, exact cum vine din CSV, inclusiv zerourile inițiale, într-un chenar cu colțuri rotunjite întins pe întreaga înălțime a blocului de text. Cifra este centrată în chenar; lipsa numărului nu este înlocuită cu poziția din listă și nu afișează un chenar gol.
+
+OnAir include o bară îngustă de instrumente fixată în stânga viewportului, cu buton pătrat Refresh CSV reprezentat prin icon. Butonul rămâne accesibil la derularea listelor lungi și apelează aceeași operație pentru proiectul selectat ca butonul din antet. Stările indisponibil/încărcare sunt comune; bara are etichete accesibile și spațiu rezervat pentru a nu acoperi conținutul. Refresh-ul rămâne explicit și păstrează tabul selectat când acesta există în noul import.
+
 Folderul de pe calculatorul de dezvoltare pentru Punctul pe Azi este `C:\Projects\_CSV\PA\Export`. Calea este o setare locală a proiectului, nu o constantă de import și nu o cale implicită pentru celelalte proiecte.
 
 ## Cele patru exporturi PA
@@ -50,6 +54,10 @@ OnAir nu produce cereri MOS simulate și nu activează proiecte. Contractul HTTP
 ## Verificare
 
 Testele acoperă parserul, grupurile, izolarea proiectelor, păstrarea snapshotului la eșec, schimbarea sursei și răspunsurile întârziate, configurația salvată și navigarea cu draft nesalvat. Build-ul verifică integrarea main/preload/renderer. Probele nu confirmă output video fizic pe LiveBoard.
+
+### Ajustări vizuale: număr comun și instrumente fixe — 21 octombrie 2026
+
+Compilarea TypeScript/Vite și împachetarea NSIS au trecut pentru afișarea numărului comun și bara fixă Refresh CSV. Bara are lățimea de 28 px, buton de 24 × 24 px și spațiu rezervat de 32 px în OnAir. Numărul folosește o coloană de 3,5 caractere și este centrat pe înălțimea blocului supratitlu/titlu. Citirea CSV, mapările, IPC și controllerul folosesc fluxurile existente. Rezultatele testelor de mai jos aparțin extinderii anterioare cu taburi și mapări.
 
 ### Extindere: taburi, mapări și template-uri implicite — 21 octombrie 2026
 

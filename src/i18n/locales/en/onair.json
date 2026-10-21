@@ -15,6 +15,7 @@
   "noSnapshot": "No successful load yet",
   "refresh": "Refresh CSV",
   "refreshing": "Refreshing…",
+  "tools": { "label": "OnAir tools", "refresh": "Refresh CSV export" },
   "record": "record {{record}}",
   "unnamedGroup": "Unnamed group",
   "emptyValue": "(empty)",

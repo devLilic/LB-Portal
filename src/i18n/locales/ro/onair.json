@@ -15,6 +15,7 @@
   "noSnapshot": "Nu există încă o încărcare reușită",
   "refresh": "Reîmprospătează CSV",
   "refreshing": "Se reîmprospătează…",
+  "tools": { "label": "Instrumente OnAir", "refresh": "Reîmprospătează exportul CSV" },
   "record": "înregistrarea {{record}}",
   "unnamedGroup": "Grup fără nume",
   "emptyValue": "(gol)",
