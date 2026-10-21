@@ -2,7 +2,7 @@ import type { AppConfig } from './types'
 
 export const baseConfig: AppConfig = {
   environment: 'development',
-  appName: 'default-electron-app',
+  appName: 'LB-Portal',
   features: {
     i18n: false,
     autoUpdate: false,
@@ -19,8 +19,8 @@ export const baseConfig: AppConfig = {
     allowPrerelease: false,
     provider: {
       provider: 'github',
-      owner: 'YOUR_GITHUB_OWNER',
-      repo: 'YOUR_RELEASE_REPO',
+      owner: 'devLilic',
+      repo: 'LB-Portal',
       visibility: 'public',
     },
   },

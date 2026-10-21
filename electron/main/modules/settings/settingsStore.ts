@@ -1,6 +1,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import type { AppSettings, SettingsKey } from '../../../../src/shared/settings/types'
+import { validateMosMappings, type MosMappingConfig } from '../../../../src/shared/settings/mosMappings'
+import { defaultMosProjects, normalizeMosProjects, setActiveProjectMappings, validateMosProjects, type MosProjectsConfig } from '../../../../src/shared/settings/mosProjects'
+import { defaultLiveBoardConnection, validateLiveBoardConnection } from '../../../../src/shared/liveboard/connection'
 
 export interface SettingsStore {
   getSettings: () => AppSettings
@@ -30,6 +33,8 @@ const defaultSettings: AppSettings = {
     theme: 'system',
     density: 'comfortable',
   },
+  mosMappings: defaultMosProjects(),
+  liveBoardConnection: defaultLiveBoardConnection,
 }
 
 export function createSettingsStore(storageDir: string): SettingsStore {
@@ -40,13 +45,25 @@ export function createSettingsStore(storageDir: string): SettingsStore {
       return readSettings(filePath)
     },
     getSetting(key) {
-      return readSettings(filePath)[key]
+      const value = readSettings(filePath, key === 'mosMappings' || key === 'liveBoardConnection')[key]
+      if (key === 'mosMappings') return normalizeMosProjects(value) as AppSettings[typeof key]
+      if (key === 'liveBoardConnection') return validateLiveBoardConnection(value) as AppSettings[typeof key]
+      return value
     },
     setSetting(key, value) {
-      const settings = readSettings(filePath)
+      if (key === 'liveBoardConnection') value = validateLiveBoardConnection(value) as AppSettings[typeof key]
+      const settings = readSettings(filePath, key === 'mosMappings' || key === 'liveBoardConnection')
+      if (key === 'mosMappings') {
+        const current = normalizeMosProjects(settings.mosMappings)
+        validateMosMappingsInput(value, current)
+      }
+      if (key === 'liveBoardConnection') validateLiveBoardConnection(settings.liveBoardConnection)
+      const savedValue = key === 'mosMappings'
+        ? (isLegacyMosMappings(value) ? setActiveProjectMappings(settings.mosMappings, value) : validateMosProjects(value))
+        : value
       const nextSettings = {
         ...settings,
-        [key]: value,
+        [key]: savedValue,
       }
 
       writeSettings(filePath, nextSettings)
@@ -55,10 +72,24 @@ export function createSettingsStore(storageDir: string): SettingsStore {
   }
 }
 
-function readSettings(filePath: string): AppSettings {
+function validateMosMappingsInput(value:unknown,current?:MosProjectsConfig):MosMappingConfig|MosProjectsConfig {
+  if(isLegacyMosMappings(value)) {
+    const activeKind=current?.projects.find(project=>project.id===current.activeProjectId)?.kind
+    return validateMosMappings(value,{allowEmptySources:activeKind==='standalone'})
+  }
+  return validateMosProjects(value)
+}
+
+function isLegacyMosMappings(value:unknown):value is MosMappingConfig {
+  return isRecord(value)&&value.version===1
+}
+
+function readSettings(filePath: string, strict = false): AppSettings {
   try {
     const fileContent = readFileSync(filePath, 'utf8')
-    const parsed = JSON.parse(fileContent) as Partial<AppSettings>
+    const parsedValue = JSON.parse(fileContent) as unknown
+    if (!isRecord(parsedValue)) throw new Error('Settings file must contain an object.')
+    const parsed = parsedValue as Partial<AppSettings>
 
     return {
       ...defaultSettings,
@@ -75,10 +106,22 @@ function readSettings(filePath: string): AppSettings {
         ...defaultSettings.uiPreferences,
         ...parsed.uiPreferences,
       },
+      // Keep invalid raw mapping data intact so unrelated settings remain usable.
+      mosMappings: (parsed.mosMappings === undefined ? defaultSettings.mosMappings : parsed.mosMappings) as AppSettings['mosMappings'],
+      liveBoardConnection: (parsed.liveBoardConnection === undefined ? defaultSettings.liveBoardConnection : parsed.liveBoardConnection) as AppSettings['liveBoardConnection'],
     }
-  } catch {
+  } catch (error) {
+    if (strict && !isMissingFileError(error)) throw new Error('Settings file is invalid; validated settings are unavailable.', { cause: error })
     return defaultSettings
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isMissingFileError(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT'
 }
 
 function writeSettings(filePath: string, settings: AppSettings) {

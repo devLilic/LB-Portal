@@ -1,9 +1,9 @@
 {
-  "name": "default-electron-app-template",
-  "productName": "Default Electron App",
+  "name": "lb-portal",
+  "productName": "LB-Portal",
   "version": "0.1.0",
   "main": "dist-electron/main/index.js",
-  "description": "Template for modular Electron desktop applications.",
+  "description": "Bridge between Plasma MOS and LiveBoard.",
   "author": "devLilic13",
   "license": "MIT",
   "private": true,
@@ -20,7 +20,9 @@
     "preview": "vite preview",
     "test": "npm run test:unit",
     "test:unit": "vitest run --config vitest.config.ts",
-    "test:unit:watch": "vitest --config vitest.config.ts"
+    "test:unit:watch": "vitest --config vitest.config.ts",
+    "mock:liveboard": "node scripts/mock-liveboard.mjs",
+    "qa:liveboard": "node scripts/qa-liveboard.cjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.8.0",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.example.default-electron-app",
+  "appId": "com.devlilic.lbportal",
   "asar": true,
   "directories": {
     "output": "release/${version}"
@@ -12,6 +12,7 @@
   "extraMetadata": {
     "main": "dist-electron/main/index.js"
   },
+  "executableName": "LB-Portal",
   "mac": {
     "artifactName": "${productName}-${version}-${arch}.${ext}",
     "target": [
@@ -20,6 +21,7 @@
     ]
   },
   "win": {
+    "executableName": "LB-Portal",
     "target": [
       {
         "target": "nsis",
@@ -39,8 +41,8 @@
   "publish": [
     {
       "provider": "github",
-      "owner": "YOUR_GITHUB_OWNER",
-      "repo": "YOUR_RELEASE_REPO",
+      "owner": "devLilic",
+      "repo": "LB-Portal",
       "releaseType": "release"
     }
   ]

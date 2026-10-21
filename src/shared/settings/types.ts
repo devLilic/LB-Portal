@@ -5,6 +5,8 @@ import type {
   MachineId,
 } from '../licensing/device-identity'
 import type { LicenseStatus } from '../licensing/contracts'
+import type { MosMappingSettings } from './mosProjects'
+import type { LiveBoardConnectionSettings } from '../liveboard/connection'
 
 export interface UpdatePreferences {
   autoCheck: boolean
@@ -34,6 +36,8 @@ export interface AppSettings {
   updatePreferences: UpdatePreferences
   licensingCache: LicensingCache
   uiPreferences: UiPreferences
+  mosMappings: MosMappingSettings
+  liveBoardConnection: LiveBoardConnectionSettings
 }
 
 export type SettingsKey = keyof AppSettings

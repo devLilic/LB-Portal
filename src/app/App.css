@@ -1,1 +1,2 @@
 @import '../App.css';
+:root{color-scheme:dark!important;color:#eaf0fa!important;background:#070d16!important}html,body,#root{width:100%;min-width:320px;min-height:100%;margin:0}body{display:block!important;place-items:unset!important;min-height:100vh;background:#070d16!important;color:#eaf0fa!important}#root{box-sizing:border-box;max-width:none;margin:0;padding:0;text-align:left;min-height:100vh;background:#070d16}

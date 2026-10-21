@@ -5,7 +5,7 @@ import {
   type SettingsValuePayload,
 } from '../../../../src/shared/ipc/contracts'
 import { createSettingsStore } from './settingsStore'
-import type { AppSettings, SettingsKey } from '../../../../src/shared/settings/types'
+import { saveSettingFromIpc } from './settingsSave'
 
 let settingsHandlersRegistered = false
 
@@ -18,20 +18,25 @@ export function registerSettingsModule() {
 
   const settingsStore = createSettingsStore(app.getPath('userData'))
 
-  ipcMain.handle(ipcInvokeChannels.settingsGet, (_event, payload: SettingsGetRequest) => {
+  ipcMain.handle(ipcInvokeChannels.settingsGet, (event, payload: SettingsGetRequest) => {
+    validateSender(event)
     return {
       key: payload.key,
       value: settingsStore.getSetting(payload.key),
     } as SettingsValuePayload
   })
 
-  ipcMain.handle(ipcInvokeChannels.settingsSet, (_event, payload: SettingsValuePayload) => {
-    const key = payload.key as SettingsKey
-    const value = payload.value as AppSettings[typeof key]
-
-    return {
-      key,
-      value: settingsStore.setSetting(key, value),
-    } as SettingsValuePayload
+  ipcMain.handle(ipcInvokeChannels.settingsSet, (event, payload: SettingsValuePayload) => {
+    validateSender(event)
+    return saveSettingFromIpc(settingsStore,payload)
   })
+}
+
+function validateSender(event: Electron.IpcMainInvokeEvent) {
+  const url = event.senderFrame?.url
+  if (!url) throw new Error('Untrusted renderer.')
+  if (url.startsWith('file://')) return
+  const devUrl = process.env.VITE_DEV_SERVER_URL
+  if (devUrl && new URL(url).origin === new URL(devUrl).origin) return
+  throw new Error('Untrusted renderer.')
 }
