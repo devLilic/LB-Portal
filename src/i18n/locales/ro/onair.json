@@ -1,0 +1,72 @@
+{
+  "nav": "OnAir",
+  "eyebrow": "Export PA CSV",
+  "title": "Date OnAir",
+  "description": "Vezi ultimul export CSV încărcat în această sesiune.",
+  "project": "Proiect",
+  "noProjects": "Nu există proiecte disponibile",
+  "noProjectsBody": "Adaugă un proiect în Setări pentru a vedea exportul OnAir.",
+  "folder": "Director configurat",
+  "folderMissing": "Nu este configurat niciun director",
+  "folderMissingTitle": "Alege directorul exportului",
+  "folderMissingBody": "Deschide Setări și configurează directorul PA CSV pentru {{project}}.",
+  "lastLoaded": "Ultima încărcare reușită",
+  "loading": "Se încarcă datele…",
+  "noSnapshot": "Nu există încă o încărcare reușită",
+  "refresh": "Reîmprospătează CSV",
+  "refreshing": "Se reîmprospătează…",
+  "record": "înregistrarea {{record}}",
+  "unnamedGroup": "Grup fără nume",
+  "emptyValue": "(gol)",
+  "imagePath": "Calea imaginii",
+  "errorDetail": "Detalii",
+  "snapshot": { "title": "Date OnAir curente" },
+  "loadProjectsError": {
+    "title": "Proiectele nu au putut fi încărcate",
+    "body": "Redeschide pagina OnAir. Dacă problema continuă, verifică proiectul în Setări."
+  },
+  "counts": {
+    "groups_one": "{{count}} grup",
+    "groups_few": "{{count}} grupuri",
+    "groups_other": "{{count}} de grupuri",
+    "titles_one": "{{count}} titlu",
+    "titles_few": "{{count}} titluri",
+    "titles_other": "{{count}} de titluri",
+    "persons_one": "{{count}} persoană",
+    "persons_few": "{{count}} persoane",
+    "persons_other": "{{count}} de persoane",
+    "locations_one": "{{count}} locație",
+    "locations_few": "{{count}} locații",
+    "locations_other": "{{count}} de locații",
+    "phones_one": "{{count}} intervenție telefonică",
+    "phones_few": "{{count}} intervenții telefonice",
+    "phones_other": "{{count}} de intervenții telefonice"
+  },
+  "sections": {
+    "titles": "Titluri",
+    "persons": "Persoane",
+    "locations": "Locații",
+    "phones": "Intervenții telefonice"
+  },
+  "groupKinds": {
+    "beta": "Beta",
+    "invited": "Invitați",
+    "ungrouped": "Fără grup",
+    "other": "Altele"
+  },
+  "none": "Niciunul",
+  "empty": {
+    "title": "Snapshotul nu conține grupuri",
+    "body": "Reîmprospătează exportul CSV după ce rundownul este disponibil."
+  },
+  "errors": {
+    "generic": { "title": "Exportul nu a putut fi citit", "body": "Ultimul snapshot reușit rămâne vizibil. Încearcă din nou." },
+    "NOT_CONFIGURED": { "title": "Directorul exportului nu este configurat", "body": "Configurează directorul PA CSV al proiectului în Setări." },
+    "PROJECT_NOT_FOUND": { "title": "Proiectul nu mai există", "body": "Revino la Setări și selectează un proiect disponibil." },
+    "READ_FAILED": { "title": "Exportul nu a putut fi citit", "body": "Fișierele CSV nu au putut fi citite. Ultimul snapshot reușit rămâne vizibil." },
+    "INVALID_CSV": { "title": "Export CSV invalid", "body": "Exportul conține date invalide. Ultimele date încărcate cu succes rămân vizibile." },
+    "FILES_CHANGED": { "title": "Exportul s-a schimbat în timpul reîmprospătării", "body": "Fișierele s-au schimbat în timpul citirii. Snapshotul anterior rămâne vizibil." },
+    "SOURCE_CHANGED": { "title": "Sursa exportului s-a schimbat", "body": "Sursa configurată s-a schimbat. Verifică directorul proiectului în Setări." },
+    "SETTINGS_INVALID": { "title": "Setările proiectului sunt invalide", "body": "Verifică setările OnAir ale proiectului înainte de reîmprospătare." }
+  }
+}

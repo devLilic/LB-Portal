@@ -7,6 +7,7 @@ import { createDatabaseMainModule } from '../modules/database/createDatabaseMain
 import { createI18nMainModule } from '../modules/i18n/createI18nMainModule'
 import { createLicensingMainModule } from '../modules/licensing/createLicensingMainModule'
 import { createSettingsMainModule } from '../modules/settings/createSettingsMainModule'
+import { createOnAirCsvMainModule } from '../onair/createOnAirCsvMainModule'
 
 export function registerMainModuleRegistry(
   config: AppConfig,
@@ -16,6 +17,7 @@ export function registerMainModuleRegistry(
     [
       createCoreMainModule(),
       createSettingsMainModule(),
+      createOnAirCsvMainModule(),
       createDatabaseMainModule(),
       createI18nMainModule(),
       createLicensingMainModule(),

@@ -1,5 +1,6 @@
 import { emptyMosMappingConfig, validateMosMappings, type MosMappingConfig } from './mosMappings'
 import { validateMosInteractions, type MosInteractionRule } from './mosInteractions'
+import type { OnAirCsvSource } from '../onair/contracts'
 
 export const builtinTelejurnalProjectId = 'builtin-telejurnal'
 export const builtinRetrospectivaProjectId = 'builtin-retrospectiva'
@@ -11,6 +12,7 @@ export interface MosProject {
   kind: MosProjectKind
   mappings: MosMappingConfig
   interactions?: MosInteractionRule[]
+  onAirCsv?: OnAirCsvSource
 }
 export interface MosProjectsConfig {
   version: 2
@@ -54,17 +56,36 @@ export function validateMosProjects(value: unknown): MosProjectsConfig {
       kind = 'standalone'
     }
     const mappings = validateMosMappings(raw.mappings, { allowEmptySources: kind === 'standalone' })
+    const onAirCsv = raw.onAirCsv === undefined ? undefined : validateOnAirCsvSource(raw.onAirCsv)
     return {
       id: raw.id,
       name: raw.name,
       kind,
       mappings,
       ...(raw.interactions === undefined ? {} : { interactions: validateMosInteractions(raw.interactions, mappings) }),
+      ...(onAirCsv === undefined ? {} : { onAirCsv }),
     }
   })
   if (!telejurnal || !retrospectiva) throw new Error('Both built-in MOS projects must be retained.')
   if (!ids.has(value.activeProjectId)) throw new Error('The active MOS project must exist.')
   return { version: 2, activeProjectId: value.activeProjectId, projects }
+}
+
+export function validateOnAirCsvSource(value: unknown): OnAirCsvSource {
+  if (!isRecord(value) || value.format !== 'pa-csv' || typeof value.folderPath !== 'string') {
+    throw new Error('Invalid OnAir CSV source.')
+  }
+  const folderPath = value.folderPath.trim()
+  if (!folderPath || folderPath.includes('\0') || !isAbsoluteDirectoryPath(folderPath)) {
+    throw new Error('OnAir CSV folder path must be a nonempty absolute directory path.')
+  }
+  return { format: 'pa-csv', folderPath }
+}
+
+function isAbsoluteDirectoryPath(value: string): boolean {
+  if (/^[a-zA-Z]:[\\/]/.test(value) || value.startsWith('/')) return true
+  if (/^\\\\[^\\/]+[\\/][^\\/]+(?:[\\/]|$)/.test(value)) return true
+  return /^\/\/[^/]+\/[^/]+(?:\/|$)/.test(value)
 }
 
 export function normalizeMosProjects(value: unknown): MosProjectsConfig {
@@ -114,6 +135,7 @@ export function duplicateMosProject(project: MosProject, name: string, createId:
         })),
       })),
     },
+    ...(project.onAirCsv === undefined ? {} : { onAirCsv: { ...project.onAirCsv } }),
     ...(project.interactions === undefined ? {} : {
       interactions: project.interactions.map(rule => ({
         ...rule,

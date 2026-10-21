@@ -11,6 +11,20 @@ export interface SettingsStore {
   setSetting: <TKey extends SettingsKey>(key: TKey, value: AppSettings[TKey]) => AppSettings[TKey]
 }
 
+type SettingsChangeListener = (key: SettingsKey, value: AppSettings[SettingsKey]) => void
+const settingsChangeListeners = new Map<string, Set<SettingsChangeListener>>()
+
+export function subscribeSettingsChanges(storageDir: string, listener: SettingsChangeListener): () => void {
+  const key = path.resolve(storageDir).toLowerCase()
+  const listeners = settingsChangeListeners.get(key) ?? new Set<SettingsChangeListener>()
+  listeners.add(listener)
+  settingsChangeListeners.set(key, listeners)
+  return () => {
+    listeners.delete(listener)
+    if (listeners.size === 0) settingsChangeListeners.delete(key)
+  }
+}
+
 const defaultSettings: AppSettings = {
   language: null,
   updatePreferences: {
@@ -67,6 +81,7 @@ export function createSettingsStore(storageDir: string): SettingsStore {
       }
 
       writeSettings(filePath, nextSettings)
+      for (const listener of settingsChangeListeners.get(path.resolve(storageDir).toLowerCase()) ?? []) listener(key, nextSettings[key])
       return nextSettings[key]
     },
   }

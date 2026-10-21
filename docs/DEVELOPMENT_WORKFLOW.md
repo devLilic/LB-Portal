@@ -1,5 +1,11 @@
 # Development Workflow
 
+## OnAir / CSV per proiect
+
+[OnAir CSV](CODEX_ONAIR_CSV.md) descrie importul manual al celor patru exporturi PA, folderul configurat per proiect, selectorul independent și snapshoturile păstrate numai în sesiune. Refresh citește și validează în main, apoi afișează grupurile în renderer prin IPC tipizat. Consultarea CSV nu activează proiectul și nu trimite comenzi LiveBoard. Citiți documentul înainte de modificarea parserului, memoriei sau configurării sursei.
+
+Verificarea OnAir din 21 octombrie 2026: 130 teste relevante și 32 verificări Electron izolate trecute; probe read-only asupra exporturilor reale și QA de renderer separat. Documentul OnAir consemnează cele patru limitări ale suitei generale și comanda de împachetare cu distribuția Electron instalată pentru eroarea locală de redenumire `EPERM`.
+
 ## Plasma / LB-Portal ingress contract
 
 The [automatic-duration acknowledgement](CODEX_PLASMA_INGRESS_CONTRACT.md#automatic-graphic-duration-in-the-acknowledgement) extends confirmed automatic PLAY responses with `automaticDurationSeconds` and `remainingDurationMs`. Plasma uses the remaining time for a per-section UI countdown back to default/PLAY; identical requests preserve the active deadline and expired/replaced instances report zero. Update LB-Portal first, then Plasma. Focused receiver/controller/TCP-mock and frontend timer regressions cover the shared contract.
@@ -37,6 +43,8 @@ The mapping editor contract also documents expected settings save restrictions: 
 For the HTTP receiver shared with Plasma, follow [the ingress contract](CODEX_PLASMA_INGRESS_CONTRACT.md) and `C:\laragon\www\plasma\docs\codex\lb-portal-mos-play.md`. PLAY may omit `params` for graphic-only templates; RESUME uses `type: "mos-resume"`, requires no field mappings, and sends only the destination template name to LBControl. The receiver returns final execution status and post-command on-air state in the same HTTP response. LB-Portal is the only bridge to LiveBoard and uses TCP LBControl for real commands. Update both contracts and indexes after functional changes. TCP acknowledgement confirms protocol acceptance, not video output.
 
 ## Core Rules
+
+The current stylesheet directives and PostCSS plugins use Tailwind CSS 3 (`@tailwind`, `tailwindcss/nesting`, `tailwindcss`, and `preflight: false`). Keep the manifest on the compatible 3.4 line until an explicit CSS migration is requested. Declaring Tailwind 4 with this configuration causes `npm run dev` and builds to fail with the missing `tailwindcss/nesting` export after a dependency installation. i18next uses the current `initAsync: false` option for synchronous initialization.
 
 - Build the starter module by module.
 - Within each module, work in small sequential tasks.

@@ -3,6 +3,17 @@
   "language": "Language",
   "appearance": "Appearance",
   "mos": {
+    "onAirCsv": {
+      "title": "OnAir CSV source",
+      "help": "Choose the PA CSV folder used by OnAir for this project. Saving settings does not read the files.",
+      "folder": "CSV folder",
+      "folderPlaceholder": "Absolute folder path",
+      "chooseFolder": "Choose folder",
+      "choosing": "Choosing…",
+      "clear": "Clear",
+      "invalidPath": "Enter an absolute folder path (Windows drive, UNC, or POSIX path).",
+      "chooseError": "Could not open the folder picker."
+    },
     "projects": {
       "editorProject": "Project being edited",
       "activeProject": "Active project for incoming Plasma requests",

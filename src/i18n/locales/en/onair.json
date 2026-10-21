@@ -1,0 +1,67 @@
+{
+  "nav": "OnAir",
+  "eyebrow": "PA CSV export",
+  "title": "OnAir data",
+  "description": "View the last CSV export loaded in this session.",
+  "project": "Project",
+  "noProjects": "No projects available",
+  "noProjectsBody": "Add a project in Settings to view its OnAir export.",
+  "folder": "Configured directory",
+  "folderMissing": "No directory configured",
+  "folderMissingTitle": "Choose an export directory",
+  "folderMissingBody": "Open Settings and configure the PA CSV directory for {{project}}.",
+  "lastLoaded": "Last successful load",
+  "loading": "Loading current data…",
+  "noSnapshot": "No successful load yet",
+  "refresh": "Refresh CSV",
+  "refreshing": "Refreshing…",
+  "record": "record {{record}}",
+  "unnamedGroup": "Unnamed group",
+  "emptyValue": "(empty)",
+  "imagePath": "Image path",
+  "errorDetail": "Details",
+  "snapshot": { "title": "Current OnAir data" },
+  "loadProjectsError": {
+    "title": "Projects could not be loaded",
+    "body": "Try opening OnAir again. If the problem continues, review the project in Settings."
+  },
+  "counts": {
+    "groups_one": "{{count}} group",
+    "groups_other": "{{count}} groups",
+    "titles_one": "{{count}} title",
+    "titles_other": "{{count}} titles",
+    "persons_one": "{{count}} person",
+    "persons_other": "{{count}} people",
+    "locations_one": "{{count}} location",
+    "locations_other": "{{count}} locations",
+    "phones_one": "{{count}} phone intervention",
+    "phones_other": "{{count}} phone interventions"
+  },
+  "sections": {
+    "titles": "Titles",
+    "persons": "Persons",
+    "locations": "Locations",
+    "phones": "Phone interventions"
+  },
+  "groupKinds": {
+    "beta": "Beta",
+    "invited": "Invited",
+    "ungrouped": "Ungrouped",
+    "other": "Other"
+  },
+  "none": "None",
+  "empty": {
+    "title": "The snapshot has no groups",
+    "body": "Refresh the CSV export after the rundown is available."
+  },
+  "errors": {
+    "generic": { "title": "Could not read the export", "body": "The last successful snapshot remains visible. Try refreshing again." },
+    "NOT_CONFIGURED": { "title": "No export directory configured", "body": "Configure the PA CSV directory for this project in Settings." },
+    "PROJECT_NOT_FOUND": { "title": "Project no longer exists", "body": "Return to Settings and select an available project." },
+    "READ_FAILED": { "title": "Export could not be read", "body": "The CSV files could not be read. The last successful snapshot remains visible." },
+    "INVALID_CSV": { "title": "Invalid CSV export", "body": "The export contains invalid data. The last successful data remains visible." },
+    "FILES_CHANGED": { "title": "Export changed during refresh", "body": "The files changed while they were being read. The previous snapshot remains visible." },
+    "SOURCE_CHANGED": { "title": "Export source changed", "body": "The configured export source changed. Review the project directory in Settings." },
+    "SETTINGS_INVALID": { "title": "Project settings are invalid", "body": "Review this project's OnAir settings before refreshing." }
+  }
+}

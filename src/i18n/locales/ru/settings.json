@@ -3,6 +3,17 @@
   "language": "Язык",
   "appearance": "Оформление",
   "mos": {
+    "onAirCsv": {
+      "title": "Источник OnAir CSV",
+      "help": "Выберите папку PA CSV для OnAir в этом проекте. Сохранение настроек не читает файлы.",
+      "folder": "Папка CSV",
+      "folderPlaceholder": "Абсолютный путь к папке",
+      "chooseFolder": "Выбрать папку",
+      "choosing": "Выбор…",
+      "clear": "Очистить путь",
+      "invalidPath": "Укажите абсолютный путь к папке (диск Windows, UNC или POSIX).",
+      "chooseError": "Не удалось открыть выбор папки."
+    },
     "nav": "Основная навигация",
     "console": "Консоль",
     "settings": "Настройки",

@@ -3,6 +3,17 @@
   "language": "Limba",
   "appearance": "Aspect",
   "mos": {
+    "onAirCsv": {
+      "title": "Sursa CSV OnAir",
+      "help": "Alege folderul PA CSV folosit de OnAir pentru acest proiect. Salvarea setărilor nu citește fișierele.",
+      "folder": "Folder CSV",
+      "folderPlaceholder": "Calea absolută a folderului",
+      "chooseFolder": "Alege folderul",
+      "choosing": "Se alege…",
+      "clear": "Șterge calea",
+      "invalidPath": "Introdu o cale absolută către folder (disc Windows, UNC sau POSIX).",
+      "chooseError": "Selectorul de foldere nu a putut fi deschis."
+    },
     "nav": "Navigare principală",
     "console": "Consolă",
     "settings": "Setări",

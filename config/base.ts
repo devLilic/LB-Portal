@@ -28,7 +28,7 @@ export const baseConfig: AppConfig = {
     enabled: false,
     defaultLanguage: 'ro',
     supportedLanguages: ['en', 'ro', 'ru'],
-    namespaces: ['common', 'settings', 'updater', 'errors', 'licensing'],
+    namespaces: ['common', 'settings', 'updater', 'errors', 'licensing', 'onair'],
   },
   appProtection: {
     enabled: false,

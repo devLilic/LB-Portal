@@ -21,6 +21,7 @@ import type { UpdatePreferences, UiPreferences } from '@/shared/settings/types'
 import type { MosMappingConfig } from '@/shared/settings/mosMappings'
 import type { MosProjectsConfig } from '@/shared/settings/mosProjects'
 import type { LiveBoardConnectionSettings } from '@/shared/liveboard/connection'
+import type { OnAirApi } from '@/shared/onair/contracts'
 import type { ProgressInfo } from 'electron-updater'
 import type { UpdateErrorPayload, UpdateStateEvent, VersionInfo } from './update'
 
@@ -56,6 +57,7 @@ declare global {
       confirmRebind: (payload: LicensingConfirmRebindPayload) => Promise<LicensingConfirmRebindResponse>
       getEntitlements: (payload: LicensingEntitlementsPayload) => Promise<LicenseEntitlementsResult>
     }
+    onAirApi: OnAirApi
     databaseApi: {
       query: (payload: DatabaseQueryPayload) => Promise<DatabaseQueryResult>
     }

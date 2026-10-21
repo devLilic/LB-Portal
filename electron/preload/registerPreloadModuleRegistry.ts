@@ -7,6 +7,7 @@ import { createLicensingApiPreloadModule } from './modules/createLicensingApiPre
 import { createSettingsApiPreloadModule } from './modules/createSettingsApiPreloadModule'
 import { createUpdateApiPreloadModule } from './modules/createUpdateApiPreloadModule'
 import { createLBPortalApiPreloadModule } from './modules/createLBPortalApiPreloadModule'
+import { createOnAirApiPreloadModule } from './modules/createOnAirApiPreloadModule'
 
 export function registerPreloadModuleRegistry(config: AppConfig) {
   return registerPreloadModules(
@@ -18,6 +19,7 @@ export function registerPreloadModuleRegistry(config: AppConfig) {
       createDatabaseApiPreloadModule(),
       createSettingsApiPreloadModule(),
       createLBPortalApiPreloadModule(),
+      createOnAirApiPreloadModule(),
     ],
     { config },
   )

@@ -4,6 +4,8 @@ This document defines the HTTP ingress contract shared by Plasma and LB-Portal. 
 
 ## Current scope
 
+The separate [OnAir CSV workspace](CODEX_ONAIR_CSV.md) reads PA exports manually from a folder saved per project. Its project selector is independent of the execution project; reading or inspecting CSVs does not activate projects or execute graphics. CSV source templates are retained as data for future explicit mappings. This workspace adds typed local IPC, without changing the Plasma HTTP envelope, authentication, CORS, acknowledgements or TCP LBC protocol.
+
 LB-Portal is the bridge between Plasma and LiveBoard: Plasma sends authenticated HTTP requests to LB-Portal, and real LiveBoard commands use only TCP with the four LBControl `LBC_` commands documented in [the protocol contract](CODEX_LIVEBOARD_PROTOCOL.md), after manual connection. The default no-socket simulation is for offline verification only. Plasma must not connect directly to LiveBoard; OSCon/OSC is retired and must not be used for this integration. HTTP receipt remains distinct from execution and on-air output.
 
 ## Process and listener

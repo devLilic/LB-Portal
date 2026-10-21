@@ -3,17 +3,20 @@ import type { AppConfig, AppLanguage, I18nConfig } from '../../config/types'
 import enCommon from './locales/en/common.json'
 import enErrors from './locales/en/errors.json'
 import enSettings from './locales/en/settings.json'
+import enOnAir from './locales/en/onair.json'
 import enUpdater from './locales/en/updater.json'
 import roCommon from './locales/ro/common.json'
 import roErrors from './locales/ro/errors.json'
 import roSettings from './locales/ro/settings.json'
+import roOnAir from './locales/ro/onair.json'
 import roUpdater from './locales/ro/updater.json'
 import ruCommon from './locales/ru/common.json'
 import ruErrors from './locales/ru/errors.json'
 import ruSettings from './locales/ru/settings.json'
+import ruOnAir from './locales/ru/onair.json'
 import ruUpdater from './locales/ru/updater.json'
 
-export const i18nNamespaces = ['common', 'settings', 'updater', 'errors'] as const
+export const i18nNamespaces = ['common', 'settings', 'updater', 'errors', 'onair'] as const
 export const fallbackLanguage: AppLanguage = 'en'
 
 export function isI18nEnabled(config: AppConfig) {
@@ -51,18 +54,21 @@ export function createI18nResources(): Resource {
     en: {
       common: enCommon,
       settings: enSettings,
+      onair: enOnAir,
       updater: enUpdater,
       errors: enErrors,
     },
     ro: {
       common: roCommon,
       settings: roSettings,
+      onair: roOnAir,
       updater: roUpdater,
       errors: roErrors,
     },
     ru: {
       common: ruCommon,
       settings: ruSettings,
+      onair: ruOnAir,
       updater: ruUpdater,
       errors: ruErrors,
     },
