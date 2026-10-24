@@ -6,6 +6,10 @@ export type OnAirDefaultTemplates = Partial<Record<'locations' | 'phones', strin
 export interface OnAirGraphicFieldMapping {
   id: string
   sourceField: string
+  /** Optional second CSV value composed into the same destination value. */
+  sourceField2?: string
+  /** Defaults to a comma and space when sourceField2 is configured. */
+  separator?: string
   targetFields: Record<string, string[]>
 }
 
@@ -14,6 +18,8 @@ export interface OnAirGraphicMapping {
   kind: OnAirGraphicKind
   sourceTemplate: string
   sectionId: string
+  exitMode?: 'manual-resume' | 'template-duration'
+  durationSeconds?: number
   fields: OnAirGraphicFieldMapping[]
 }
 
@@ -45,6 +51,8 @@ export type OnAirGraphicResolution =
       status: 'matched'
       sourceTemplate: string
       section: { id: string; name: string }
+      exitMode: 'manual-resume' | 'template-duration'
+      durationSeconds: number
       targets: Array<{ id: string; template: string; fields: Record<string, string> }>
     }
   | { status: 'unmapped'; kind: OnAirGraphicKind; sourceTemplate: string }
@@ -69,6 +77,8 @@ export function getOnAirMappingIssues(value: unknown, mappings: MosMappingConfig
     const kind = isOnAirGraphicKind(mapping.kind) ? mapping.kind : null
     if (!kind) issue('invalidKind', `${base}.kind`)
     if (typeof mapping.sourceTemplate !== 'string' || !mapping.sourceTemplate.trim()) issue('required', `${base}.sourceTemplate`)
+    if (mapping.exitMode !== undefined && mapping.exitMode !== 'manual-resume' && mapping.exitMode !== 'template-duration') issue('invalidExitMode', `${base}.exitMode`)
+    if (mapping.durationSeconds !== undefined && (typeof mapping.durationSeconds !== 'number' || !Number.isFinite(mapping.durationSeconds) || mapping.durationSeconds <= 0 || mapping.durationSeconds > 86400)) issue('invalidDuration', `${base}.durationSeconds`)
     const key = `${String(mapping.kind)}\0${String(mapping.sourceTemplate)}`
     if (sourceKeys.has(key)) issue('duplicateSource', `${base}.sourceTemplate`)
     sourceKeys.add(key)
@@ -88,6 +98,12 @@ export function getOnAirMappingIssues(value: unknown, mappings: MosMappingConfig
       addId(field.id, `${fieldPath}.id`, ids, issue)
       if (typeof field.sourceField !== 'string' || !field.sourceField.trim()) issue('required', `${fieldPath}.sourceField`)
       else if (kind && !onAirSourceFields[kind].includes(field.sourceField)) issue('invalidSourceField', `${fieldPath}.sourceField`)
+      if (field.sourceField2 !== undefined) {
+        if (typeof field.sourceField2 !== 'string' || !field.sourceField2.trim()) issue('invalidSourceField', `${fieldPath}.sourceField2`)
+        else if (kind && !onAirSourceFields[kind].includes(field.sourceField2)) issue('invalidSourceField', `${fieldPath}.sourceField2`)
+        else if (field.sourceField2 === field.sourceField) issue('duplicateSourceField', `${fieldPath}.sourceField2`)
+      }
+      if (field.separator !== undefined && typeof field.separator !== 'string') issue('invalidSeparator', `${fieldPath}.separator`)
 
       const targetFields = field.targetFields as Record<string, unknown>
       for (const [targetId, rawDestinations] of Object.entries(targetFields)) {
@@ -119,6 +135,8 @@ export function validateOnAirMappings(value: unknown, mappings: MosMappingConfig
   if (issues.length) throw new Error(`Invalid OnAir mappings: ${issues.map(({ code, path }) => `${code} at ${path}`).join(', ')}`)
   return (value as OnAirGraphicMapping[]).map(mapping => ({
     ...mapping,
+    exitMode: mapping.exitMode ?? 'manual-resume',
+    durationSeconds: mapping.durationSeconds ?? 6,
     fields: mapping.fields.map(field => ({
       ...field,
       targetFields: Object.fromEntries(Object.entries(field.targetFields).map(([targetId, destinations]) => [targetId, [...destinations]])),
@@ -142,14 +160,20 @@ export function resolveOnAirGraphic(
   const targets = section.targets.map(target => ({ id: target.id, template: target.template, fields: {} as Record<string, string> }))
   const targetsById = new Map(targets.map(target => [target.id, target]))
   for (const field of graphicMapping.fields) {
-    const value = values[field.sourceField] ?? ''
+    const primary = values[field.sourceField] ?? ''
+    const secondary = field.sourceField2 ? values[field.sourceField2] ?? '' : ''
+    const value = field.sourceField2
+      ? primary && secondary
+        ? `${primary}${field.separator ?? ', '}${secondary}`
+        : primary || secondary
+      : primary
     for (const [targetId, destinationFields] of Object.entries(field.targetFields)) {
       const target = targetsById.get(targetId)
       if (!target) return { status: 'missing-template', kind, sourceTemplate: effectiveTemplate, sectionId: section.id, targetId }
       for (const destination of destinationFields) target.fields[destination] = value
     }
   }
-  return { status: 'matched', sourceTemplate: effectiveTemplate, section: { id: section.id, name: section.name }, targets }
+  return { status: 'matched', sourceTemplate: effectiveTemplate, section: { id: section.id, name: section.name }, exitMode: graphicMapping.exitMode ?? 'manual-resume', durationSeconds: graphicMapping.durationSeconds ?? 6, targets }
 }
 
 function addId(value: unknown, path: string, ids: Set<string>, issue: (code: string, path: string) => void) {

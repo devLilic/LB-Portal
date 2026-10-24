@@ -10,9 +10,9 @@ import type {
 import { normalizeMosProjects, type MosProject } from '../../../src/shared/settings/mosProjects'
 import type { SettingsKey, AppSettings } from '../../../src/shared/settings/types'
 import { subscribeSettingsChanges, type SettingsStore } from '../modules/settings/settingsStore'
-import { assembleOnAirGroups, OnAirCsvError, parseOnAirCsvFile, type OnAirCsvFileName } from './parseOnAirCsv'
+import { assembleOnAirGroups, OnAirCsvError, parseOnAirCsvFile, type OnAirCsvFileKind, type OnAirCsvFileName } from './parseOnAirCsv'
 
-const files: OnAirCsvFileName[] = ['PA_titles.csv', 'PA_persons.csv', 'PA_locations.csv', 'PA_phones.csv']
+const fileKinds: OnAirCsvFileKind[] = ['titles', 'persons', 'locations', 'phones']
 const maxAttempts = 3
 
 interface CachedSnapshot {
@@ -53,7 +53,7 @@ export function createOnAirCsvService(
   }
 
   function projectSources(): Map<string, string | null> {
-    return new Map(readProjects().projects.map(project => [project.id, project.onAirCsv?.folderPath ?? null]))
+    return new Map(readProjects().projects.map(project => [project.id, sourceKey(project)]))
   }
 
   function reconcileSources(next = projectSources()) {
@@ -83,7 +83,7 @@ export function createOnAirCsvService(
   const unsubscribeSettings = subscribeSettingsChanges(settingsDirectory, (key: SettingsKey, value: AppSettings[SettingsKey]) => {
     if (key !== 'mosMappings') return
     try {
-      reconcileSources(new Map(normalizeMosProjects(value).projects.map(project => [project.id, project.onAirCsv?.folderPath ?? null])))
+      reconcileSources(new Map(normalizeMosProjects(value).projects.map(project => [project.id, sourceKey(project)])))
     } catch {
       for (const id of knownSources.keys()) {
         generations.set(id, (generations.get(id) ?? 0) + 1)
@@ -112,7 +112,7 @@ export function createOnAirCsvService(
 
   function listProjects(): OnAirProjectSummary[] {
     const config = readProjects()
-    reconcileSources(new Map(config.projects.map(project => [project.id, project.onAirCsv?.folderPath ?? null])))
+    reconcileSources(new Map(config.projects.map(project => [project.id, sourceKey(project)])))
     return config.projects.map(project => ({
       id: project.id,
       name: project.name,
@@ -121,13 +121,14 @@ export function createOnAirCsvService(
     }))
   }
 
-  async function loadSnapshot(projectId: string, source: string, generation: number): Promise<OnAirState> {
+  async function loadSnapshot(projectId: string, source: string, filePrefix: string, generation: number): Promise<OnAirState> {
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const files = fileKinds.map(kind => `${filePrefix}${kind}.csv` as OnAirCsvFileName) as [OnAirCsvFileName, OnAirCsvFileName, OnAirCsvFileName, OnAirCsvFileName]
       let before: string[]
       try {
         before = await Promise.all(files.map(file => fileSignature(path.join(source, file), dependencies.stat).catch(error => { throw withSourceFile(error, file) })))
       } catch (error) {
-        const changed = currentSourceError(projectId, source, generation)
+        const changed = currentSourceError(projectId, source, filePrefix, generation)
         if (changed) return changed
         if (isMissingFile(error) && attempt < maxAttempts - 1) continue
         return state(projectId, safeFindProject(projectId), readError(error))
@@ -137,7 +138,7 @@ export function createOnAirCsvService(
       try {
         contents = await Promise.all(files.map(file => dependencies.readFile(path.join(source, file)).catch(error => { throw withSourceFile(error, file) })))
       } catch (error) {
-        const changed = currentSourceError(projectId, source, generation)
+        const changed = currentSourceError(projectId, source, filePrefix, generation)
         if (changed) return changed
         if (isMissingFile(error) && attempt < maxAttempts - 1) continue
         return state(projectId, safeFindProject(projectId), readError(error))
@@ -147,7 +148,7 @@ export function createOnAirCsvService(
       try {
         after = await Promise.all(files.map(file => fileSignature(path.join(source, file), dependencies.stat).catch(error => { throw withSourceFile(error, file) })))
       } catch (error) {
-        const changed = currentSourceError(projectId, source, generation)
+        const changed = currentSourceError(projectId, source, filePrefix, generation)
         if (changed) return changed
         if (isMissingFile(error) && attempt < maxAttempts - 1) continue
         return state(projectId, safeFindProject(projectId), readError(error))
@@ -157,13 +158,13 @@ export function createOnAirCsvService(
         return state(projectId, safeFindProject(projectId), { code: 'FILES_CHANGED' })
       }
 
-      const changed = currentSourceError(projectId, source, generation)
+      const changed = currentSourceError(projectId, source, filePrefix, generation)
       if (changed) return changed
       const currentProject = findProject(projectId)!
 
       try {
         const parsed = files.map((file, index) => parseOnAirCsvFile(file, contents[index]!))
-        const groups: OnAirGroup[] = assembleOnAirGroups(projectId, parsed[0]!, parsed[1]!, parsed[2]!, parsed[3]!)
+        const groups: OnAirGroup[] = assembleOnAirGroups(projectId, parsed[0]!, parsed[1]!, parsed[2]!, parsed[3]!, files)
         const snapshot: OnAirSnapshot = { projectId, folderPath: source, loadedAt: new Date().toISOString(), groups }
         snapshots.set(projectId, { snapshot, generation })
         return state(projectId, currentProject, null)
@@ -184,14 +185,14 @@ export function createOnAirCsvService(
     try { return findProject(projectId) } catch { return undefined }
   }
 
-  function currentSourceError(projectId: string, source: string, generation: number): OnAirState | null {
+  function currentSourceError(projectId: string, source: string, filePrefix: string, generation: number): OnAirState | null {
     let currentProject: MosProject | undefined
     try { currentProject = findProject(projectId) } catch { return state(projectId, undefined, { code: 'SETTINGS_INVALID' }) }
     if (!currentProject) {
       snapshots.delete(projectId)
       return state(projectId, undefined, { code: 'PROJECT_NOT_FOUND' })
     }
-    if (currentProject.onAirCsv?.folderPath !== source || (generations.get(projectId) ?? 0) !== generation) {
+    if (currentProject.onAirCsv?.folderPath !== source || (currentProject.onAirCsv?.filePrefix ?? 'PA_') !== filePrefix || (generations.get(projectId) ?? 0) !== generation) {
       snapshots.delete(projectId)
       return state(projectId, currentProject, { code: 'SOURCE_CHANGED' })
     }
@@ -219,9 +220,10 @@ export function createOnAirCsvService(
       reconcileSources()
       if (!project.onAirCsv) return Promise.resolve(state(projectId, project, { code: 'NOT_CONFIGURED' }))
       const source = project.onAirCsv.folderPath
+      const filePrefix = project.onAirCsv.filePrefix ?? 'PA_'
       const generation = generations.get(projectId) ?? 0
       busyProjects.add(projectId)
-      const operation = loadSnapshot(projectId, source, generation)
+      const operation = loadSnapshot(projectId, source, filePrefix, generation)
         .then(result => ({ ...result, busy: false }))
         .finally(() => {
           busyProjects.delete(projectId)
@@ -260,4 +262,9 @@ function withSourceFile(error: unknown, file: string): Error & { sourceFile: str
 
 function isMissingFile(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT'
+}
+
+function sourceKey(project: MosProject): string | null {
+  if (!project.onAirCsv) return null
+  return `${project.onAirCsv.folderPath}\0${project.onAirCsv.filePrefix ?? 'PA_'}`
 }

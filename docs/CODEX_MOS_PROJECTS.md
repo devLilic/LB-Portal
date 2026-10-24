@@ -2,9 +2,9 @@
 
 ## Scop
 
-Secțiunile sunt organizate în proiecte independente. Numai **Telejurnal** și **Retrospectiva săptămânii** primesc PLAY din Plasma. Celelalte emisiuni sunt proiecte pentru operare directă în LB-Portal; interfața de operare directă se dezvoltă într-o etapă ulterioară. Această etapă organizează configurația lor și nu introduce un nou buton PLAY pentru ele.
+Secțiunile sunt organizate în proiecte independente. Numai **Telejurnal** și **Retrospectiva săptămânii** primesc PLAY din Plasma. Celelalte emisiuni sunt proiecte pentru operare directă în LB-Portal și pot fi activate și operate din OnAir; cererile Plasma rămân blocate pentru aceste proiecte.
 
-Operatorul alege manual proiectul activ în consola LB-Portal. Cererile Plasma nu indică un proiect și nu aleg automat altul. Dacă proiectul activ este unul pentru operare directă, cererea HTTP se înregistrează, însă execuția este blocată, fără setări de câmpuri sau comenzi LiveBoard. Nu există fallback la Telejurnal.
+Operatorul alege și activează manual proiectul din selectorul unic al tabului OnAir din LB-Portal. Selectorul alege și sursa CSV pentru OnAir; simpla schimbare a selecției nu activează proiectul. Cererile Plasma nu indică un proiect și nu aleg automat altul. Dacă proiectul activ este unul pentru operare directă, cererea HTTP se înregistrează, însă execuția este blocată, fără setări de câmpuri sau comenzi LiveBoard. Nu există fallback la Telejurnal.
 
 ## Proiecte incluse și proiecte noi
 
@@ -28,7 +28,7 @@ Fiecare proiect poate salva și [reguli de interacțiune între secțiuni](CODEX
 
 Selectarea unui proiect în Setări schimbă numai proiectul editat. Modificările se salvează explicit și avertizarea pentru drafturi nesalvate rămâne aplicabilă. Selectarea în editor nu activează proiectul și nu transmite comenzi.
 
-Activarea se face explicit din consolă, printr-o operație main/preload tipizată. Main recitește configurația salvată curentă înainte de activare; consola nu trimite înapoi o copie veche a întregii configurații.
+Activarea se face explicit din OnAir, prin aceeași operație main/preload tipizată. Main recitește configurația salvată curentă înainte de activare; interfața nu trimite înapoi o copie veche a întregii configurații. Consola rămâne pentru starea runtime și diagnosticare.
 
 Schimbarea proiectului este blocată cât timp există o operație în curs/coadă sau o secțiune activă ori incertă. Operatorul oprește sau resincronizează secțiunile înainte de schimbare. Restricțiile sunt răspunsuri operaționale cu mesaje localizate, fără excepții de handler pentru cazurile așteptate. Nu există STOP automat la schimbarea selectorului.
 
@@ -36,9 +36,9 @@ După o schimbare permisă, controllerul pornește starea noului proiect de la O
 
 ## Persistență și migrare
 
-Proiectele pot include opțional `onAirCsv: { format: 'pa-csv', folderPath: string }`, conform [contractului OnAir CSV](CODEX_ONAIR_CSV.md). Sursa se salvează în proiect și se păstrează la redenumire, duplicare și actualizarea mapărilor prin adaptorul legacy. Versiunea configurației rămâne 2; proiectele fără sursă rămân valide. Datele importate sunt separate după ID și trăiesc numai în memoria sesiunii. Selectorul OnAir inspectează un proiect fără să schimbe proiectul activ al controllerului.
+Proiectele pot include opțional `onAirCsv: { format: 'pa-csv', folderPath: string }`, conform [contractului OnAir CSV](CODEX_ONAIR_CSV.md). Sursa se salvează în proiect și se păstrează la redenumire, duplicare și actualizarea mapărilor prin adaptorul legacy. Versiunea configurației rămâne 2; proiectele fără sursă rămân valide. Datele importate sunt separate după ID și trăiesc numai în memoria sesiunii. Selectorul OnAir alege proiectul CSV, iar schimbarea lui activează runtime-ul numai la acționarea explicită a butonului dedicat.
 
-Proprietatea opțională `onAirMappings` leagă tipurile și template-urile CSV de secțiunile, targeturile și câmpurile LiveBoard. Configurația se validează și se salvează în proiect; duplicarea remapează ID-urile și referințele, iar adaptorul v1 o păstrează. Aceste mapări de date sunt independente de sursele MOS și nu constituie o activare sau execuție LiveBoard.
+Proprietatea opțională `onAirMappings` leagă tipurile și template-urile CSV de secțiunile, targeturile și câmpurile LiveBoard. Configurația se validează și se salvează în proiect; duplicarea remapează ID-urile și referințele, iar adaptorul v1 o păstrează. Aceste mapări de date sunt independente de sursele MOS și nu constituie o execuție LiveBoard.
 
 `onAirDefaultTemplates` configurează opțional câte un nume pentru locații și intervenții telefonice fără template în CSV. Valorile CSV au prioritate. Configurația se păstrează la scrierile legacy și se copiază independent la duplicare, fără schimbarea snapshotului sau a runtime-ului.
 

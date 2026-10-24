@@ -7,7 +7,7 @@ export const productionConfig: AppConfig = {
   features: {
     ...baseConfig.features,
     i18n: false,
-    autoUpdate: false,
+    autoUpdate: true,
     appProtection: false,
     licensing: false,
     database: false,
@@ -15,7 +15,7 @@ export const productionConfig: AppConfig = {
   },
   update: {
     ...baseConfig.update,
-    enabled: false,
+    enabled: true,
   },
   i18n: {
     ...baseConfig.i18n,

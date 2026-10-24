@@ -5,9 +5,11 @@
   "mos": {
     "onAirCsv": {
       "title": "Sursa CSV OnAir",
-      "help": "Alege folderul PA CSV folosit de OnAir pentru acest proiect. Salvarea setărilor nu citește fișierele.",
+      "help": "Alege folderul CSV OnAir și prefixul fișierelor pentru acest proiect. De exemplu, ES_ folosește ES_titles.csv. Salvarea nu citește fișierele.",
       "folder": "Folder CSV",
       "folderPlaceholder": "Calea absolută a folderului",
+      "filePrefix": "Prefix fișiere",
+      "invalidPrefix": "Prefixul trebuie să conțină doar litere, cifre, _ sau - și să se termine cu _.",
       "chooseFolder": "Alege folderul",
       "choosing": "Se alege…",
       "clear": "Șterge calea",
@@ -123,18 +125,22 @@
       "section": "Secțiune LiveBoard",
       "chooseSection": "Alege o secțiune",
       "noSection": "Alege o secțiune înainte de maparea câmpurilor.",
+      "playbackHelp": "Setările se aplică comenzilor PLAY pentru acest template CSV. Durata automată reia secțiunea după numărul de secunde selectat.",
       "targets": "Șabloane LiveBoard din această secțiune",
       "sourceField": "Câmp CSV",
+      "secondSourceField": "Al doilea câmp CSV (opțional)",
+      "noSecondSourceField": "Nu combina",
+      "sourceSeparator": "Separator între valori",
       "chooseField": "Alege un câmp CSV",
       "destinationPlaceholder": "Un câmp destinație pe fiecare rând",
-      "destinationHelp": "Fiecare rând primește valoarea câmpului CSV selectat.",
+      "destinationHelp": "Fiecare rând primește valoarea CSV selectată sau ambele valori unite prin separatorul ales, dacă selectezi un al doilea câmp.",
       "addField": "Adaugă mapare de câmp",
       "removeField": "Elimină maparea câmpului",
       "sectionInUse": "Această secțiune este folosită de o mapare CSV OnAir. Elimină sau mută mai întâi maparea.",
       "targetInUse": "Acest șablon este folosit de o mapare de câmp CSV OnAir. Elimină sau actualizează mai întâi maparea.",
       "kinds": {"titles":"Titluri","persons":"Persoane","locations":"Locații","phones":"Telefoane"},
       "fields": {"Titlu":"Titlu","Supratitlu":"Supratitlu","Nume":"Nume","Functie":"Funcție","Locatie":"Locație","Image":"Imagine"},
-      "validation": {"invalidStructure":"Structură invalidă pentru maparea OnAir.","duplicateId":"Identificatorii mapărilor trebuie să fie unici.","required":"Alege o valoare pentru această mapare.","invalidKind":"Tip grafic CSV necunoscut.","duplicateSource":"Acest grafic CSV are deja o mapare.","invalidSection":"Alege o secțiune LiveBoard existentă.","invalidSourceField":"Alege un câmp disponibil pentru acest tip de grafic.","invalidTarget":"Un șablon LiveBoard mapat nu mai există.","invalidTargetFields":"Introdu cel puțin un nume de câmp destinație.","duplicateTargetField":"Un câmp destinație este repetat."}
+      "validation": {"invalidStructure":"Structură invalidă pentru maparea OnAir.","duplicateId":"Identificatorii mapărilor trebuie să fie unici.","required":"Alege o valoare pentru această mapare.","invalidKind":"Tip grafic CSV necunoscut.","duplicateSource":"Acest grafic CSV are deja o mapare.","invalidSection":"Alege o secțiune LiveBoard existentă.","invalidSourceField":"Alege un câmp disponibil pentru acest tip de grafic.","duplicateSourceField":"Alege două câmpuri CSV diferite.","invalidSeparator":"Separatorul trebuie să fie text.","invalidTarget":"Un șablon LiveBoard mapat nu mai există.","invalidTargetFields":"Introdu cel puțin un nume de câmp destinație.","duplicateTargetField":"Un câmp destinație este repetat."}
     },
     "projects": {
       "editorProject": "Proiect editat",
@@ -334,7 +340,7 @@
       "stop": "STOP",
       "suspend": "Suspendă temporar"
     },
-    "projectActivated": "Proiectul activ s-a schimbat în {{name}}.",
+    "projectActivated": "Activat",
     "projectSwitchDenied": {
       "LIVEBOARD_BUSY": "O operație LiveBoard este în curs. Așteaptă finalizarea ei, apoi schimbă proiectul.",
       "LIVEBOARD_PROJECT_SWITCH_ACTIVE": "Oprește secțiunile indicate ({{sections}}) înainte de schimbarea proiectului activ.",

@@ -121,13 +121,22 @@ async function main() {
       onRequestUpdated: () => () => {},
       clearRequests: async () => undefined,
     }
+    window.__activeRuntimeProject = first
+    const runtimeSnapshot = () => ({
+      activeProject: { id: window.__activeRuntimeProject.id, name: window.__activeRuntimeProject.name, kind: window.__activeRuntimeProject.kind },
+      projects: [first, second], connection: { mode: 'simulation', status: 'simulated' },
+      sections: [], operations: [],
+    })
     window.liveBoardApi = {
       onSnapshot: () => () => {},
-      getSnapshot: async () => ({
-        activeProject: { id: first.id, name: first.name, kind: first.kind },
-        projects: [first, second], connection: { mode: 'simulation', status: 'simulated' },
-        sections: [], operations: [],
-      }),
+      getSnapshot: async () => runtimeSnapshot(),
+      setActiveProject: async id => {
+        window.__onAirCalls.activeProjectChanges++
+        const project = [first, second].find(item => item.id === id)
+        if (!project) return { ok: false, error: { code: 'LIVEBOARD_PROJECT_NOT_FOUND', sectionNames: [] } }
+        window.__activeRuntimeProject = project
+        return { ok: true, value: runtimeSnapshot() }
+      },
     }
     window.__onAirCalls = { listProjects: 0, snapshots: [], refresh: 0, activeProjectChanges: 0 }
     window.__releaseFirstSnapshot = null
@@ -156,7 +165,6 @@ async function main() {
     }
     window.__firstSnapshot = firstSnapshot
     window.__secondSnapshot = secondSnapshot
-    window.liveBoardApi.setActiveProject = async () => { window.__onAirCalls.activeProjectChanges++; throw new Error('OnAir must not activate a LiveBoard project') }
   }, {
     first: projectOne,
     second: projectTwo,
@@ -167,7 +175,7 @@ async function main() {
   })
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'OnAir', exact: true }).click()
-  const selector = page.getByRole('combobox', { name: 'Project' })
+  const selector = page.getByRole('combobox', { name: 'Active project for incoming Plasma requests' })
   await selector.waitFor({ state: 'visible' })
   await selector.selectOption(projectTwo.id)
   await page.locator('.onair-group-heading h3').getByText('Invitați și subiecte de actualitate', { exact: true }).waitFor()
@@ -228,7 +236,10 @@ async function main() {
   assert.ok(counts.listProjects >= 1, 'OnAir should request the saved project list when it opens')
   assert.equal(counts.refresh, 0, 'opening OnAir must not refresh the CSV export')
   assert.ok(counts.snapshots.includes(projectOne.id) && counts.snapshots.includes(projectTwo.id), 'switching projects should load each memory snapshot')
-  assert.equal(counts.activeProjectChanges, 0, 'OnAir selection must not activate a LiveBoard project')
+  assert.equal(counts.activeProjectChanges, 0, 'changing the OnAir project selection alone must not activate a LiveBoard project')
+  await page.getByRole('button', { name: 'Activate project', exact: true }).click()
+  await page.getByText('Active in runtime: Retrospectiva săptămânii', { exact: true }).waitFor()
+  assert.equal((await page.evaluate(() => window.__onAirCalls.activeProjectChanges)), 1, 'explicit OnAir activation should switch the selected runtime project')
 
   for (const width of [640, 1280, 1920]) {
     await page.setViewportSize({ width, height: 1000 })

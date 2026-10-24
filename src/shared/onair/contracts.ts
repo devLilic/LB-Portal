@@ -1,9 +1,12 @@
 import type { MosProjectKind } from '../settings/mosProjects'
+import type { LiveBoardExecutionReport } from '../liveboard/runtime'
+import type { OnAirGraphicKind } from './mappings'
 export type { OnAirDefaultTemplates, OnAirGraphicFieldMapping, OnAirGraphicKind, OnAirGraphicMapping, OnAirGraphicMappingIssue, OnAirGraphicResolution } from './mappings'
 
 export interface OnAirCsvSource {
   format: 'pa-csv'
   folderPath: string
+  filePrefix?: string
 }
 
 export interface OnAirProjectSummary {
@@ -92,11 +95,28 @@ export interface OnAirState {
   busy: boolean
 }
 
+export interface OnAirPlaybackRequest {
+  projectId: string
+  kind: OnAirGraphicKind
+  itemId: string
+  sourceTemplate: string
+  values: Record<string, string>
+  action: 'play' | 'resume'
+}
+
+export interface OnAirPlaybackResult {
+  itemId: string
+  kind: OnAirGraphicKind
+  sourceTemplate: string
+  execution: LiveBoardExecutionReport
+}
+
 export interface OnAirApi {
   listProjects(): Promise<OnAirProjectSummary[]>
   chooseFolder(): Promise<string | null>
   getSnapshot(projectId: string): Promise<OnAirState>
   refresh(projectId: string): Promise<OnAirState>
+  playItem(request: OnAirPlaybackRequest): Promise<OnAirPlaybackResult>
 }
 
 export const onAirInvokeChannels = {
@@ -104,4 +124,5 @@ export const onAirInvokeChannels = {
   chooseFolder: 'onair:choose-folder',
   getSnapshot: 'onair:get-snapshot',
   refresh: 'onair:refresh',
+  playItem: 'onair:play-item',
 } as const

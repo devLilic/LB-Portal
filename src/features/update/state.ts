@@ -24,7 +24,7 @@ export function reduceUpdateState(
     case 'availability-changed':
       return {
         ...state,
-        modalOpen: true,
+        modalOpen: event.payload.update,
         readyToInstall: false,
         updateAvailable: event.payload.update,
         versionInfo: event.payload,

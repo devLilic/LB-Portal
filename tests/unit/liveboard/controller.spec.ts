@@ -143,6 +143,54 @@ describe('LiveBoard controller',()=>{
     expect(c.snapshot.activeProject).toEqual({id:direct.id,name:direct.name,kind:'standalone'})
     expect((await c.execute({requestId:'direct-no-map',template:'MOS',params:{Title:'x',strap:'y'}})).status).toBe('blocked')
   })
+  it('allows an explicit mapped OnAir PLAY in the active standalone project while keeping ordinary requests blocked',async()=>{
+    vi.useFakeTimers()
+    const projects=defaultMosProjects()
+    const direct={id:'direct-onair',name:'Direct OnAir',kind:'standalone' as const,mappings:mapping}
+    const config={...projects,activeProjectId:direct.id,projects:[...projects.projects,direct]}
+    const c=new LiveBoardController(connection,config)
+    const onAirResolution={status:'matched' as const,template:'05_Titlu',project:{id:direct.id,name:direct.name,kind:direct.kind},section:{id:'s',name:'Headlines'},targets:[
+      {id:'a',template:'LB-A',fields:[{param:'Titlu',fields:['Headline'],value:'OnAir title'},{param:'Supratitlu',fields:['Strap'],value:''}]},
+      {id:'b',template:'LB-B',fields:[{param:'Titlu',fields:['Headline'],value:'OnAir title'},{param:'Supratitlu',fields:['Strap'],value:''}]},
+      ],exitMode:'template-duration' as const,durationSeconds:2,resumePlayDelayMs:0,dataPropagationDelayMs:0,missingParams:[],unmappedParams:[]}
+    try {
+      const report=await executeWithFakeTimers(c,{requestId:'onair-item',template:'05_Titlu',mapping:onAirResolution,allowStandalone:true})
+      expect(report.status).toBe('completed')
+      expect(report.projectKind).toBe('standalone')
+      expect(report.steps.filter(step=>step.kind==='set-field').map(step=>[step.field,step.value])).toEqual([['Headline','OnAir title'],['Strap','']])
+      expect(c.snapshot.sections[0]?.state).toBe('ON_A')
+      expect(c.snapshot.sections[0]?.exitMode).toBe('template-duration')
+      await c.takeOut('s')
+      expect(c.snapshot.sections[0]?.state).toBe('ON_A')
+      expect((await c.execute({requestId:'ordinary-standalone',template:'MOS',params:{Title:'x'}})).status).toBe('blocked')
+      await vi.advanceTimersByTimeAsync(2000)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(c.snapshot.sections[0]?.state).toBe('OFF')
+      expect(c.snapshot.sections[0]?.exitMode).toBeNull()
+    } finally { c.dispose() }
+  })
+  it('resolves OnAir values from B-only fields and rejects stale or mismatched Resume items',async()=>{
+    const projects=defaultMosProjects()
+    const direct={id:'direct-onair-b',name:'Direct OnAir B',kind:'standalone' as const,mappings:mapping}
+    const config={...projects,activeProjectId:direct.id,projects:[...projects.projects,direct]}
+    const c=new LiveBoardController(connection,config)
+    const makeResolution=(value:string)=>({status:'matched' as const,template:'05_Titlu',project:{id:direct.id,name:direct.name,kind:direct.kind},section:{id:'s',name:'Headlines'},targets:[
+      {id:'a',template:'LB-A',fields:[]},
+      {id:'b',template:'LB-B',fields:[{param:'Titlu',fields:['HeadlineB'],value}]},
+    ],exitMode:'manual-resume' as const,durationSeconds:0,resumePlayDelayMs:0,dataPropagationDelayMs:0,missingParams:[],unmappedParams:[]})
+    try {
+      const first=await c.execute({requestId:'onair-a',template:'05_Titlu',mapping:makeResolution('first'),allowStandalone:true})
+      expect(first.steps.filter(step=>step.kind==='set-field')).toEqual([])
+      const next=await c.execute({requestId:'onair-b',template:'05_Titlu',mapping:makeResolution('second'),allowStandalone:true})
+      expect(next.steps.filter(step=>step.kind==='set-field').map(step=>[step.field,step.value])).toEqual([['HeadlineB','second']])
+      expect(next.afterState).toBe('ON_B')
+      const stale=await c.resumeSource('05_Titlu',makeResolution('not active'),true,true)
+      expect(stale.status).toBe('blocked')
+      const resumed=await c.resumeSource('05_Titlu',makeResolution('second'),true,true)
+      expect(resumed.status).toBe('completed')
+      expect(resumed.afterState).toBe('OFF')
+    } finally { c.dispose() }
+  })
   it('requires every section OFF before changing projects and resets to the selected project',async()=>{
     const projects=defaultMosProjects(mapping)
     const c=new LiveBoardController(connection,projects)

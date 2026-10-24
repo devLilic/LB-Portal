@@ -4,24 +4,30 @@ This document defines the HTTP ingress contract shared by Plasma and LB-Portal. 
 
 ## Current scope
 
-The separate [OnAir CSV workspace](CODEX_ONAIR_CSV.md) reads PA exports manually from a folder saved per project. Its project selector is independent of the execution project; reading or inspecting CSVs does not activate projects or execute graphics. CSV source templates are retained as keys for explicit per-project mappings. This workspace adds typed local IPC, without changing the Plasma HTTP envelope, authentication, CORS, acknowledgements or TCP LBC protocol.
+The [OnAir CSV workspace](CODEX_ONAIR_CSV.md) reads PA exports manually from a folder saved per project. Its single project selector chooses the CSV source and the project that may be activated; a separate explicit activation button is required, and changing selection alone does not change runtime state. CSV source templates are retained as keys for explicit per-project mappings. This workspace adds typed local IPC, without changing the Plasma HTTP envelope, authentication, CORS, acknowledgements or TCP LBC protocol.
 
 OnAir now configures explicit per-project CSV mappings by graphic type and source template. The mapping resolver prepares existing section/target templates and field values for preview; it does not submit a MOS request, activate a project or run the controller. These data mappings remain separate from MOS source mappings and do not broaden Plasma execution to standalone projects.
 
 Locations and phone interventions may use a per-project default template when their CSV row has no nonblank `Template`. A nonblank CSV value takes precedence and is preserved exactly. This local default is applied consistently in the mapping catalog and value preview; it does not change the Plasma request schema.
 
+OnAir also has a separate explicit local PLAY/Resume operation per CSV item through the typed `onAirApi.playItem` IPC. Main re-resolves the saved project mapping and calls the existing LiveBoard controller; it does not create a MOS request or change the Plasma HTTP envelope. Standalone projects may use these manual OnAir actions when selected as the active execution project. Plasma ingress remains disabled for standalone projects. See [the OnAir CSV contract](CODEX_ONAIR_CSV.md) for request fields, active-item Resume checks, and template-duration behavior.
+
 LB-Portal is the bridge between Plasma and LiveBoard: Plasma sends authenticated HTTP requests to LB-Portal, and real LiveBoard commands use only TCP with the four LBControl `LBC_` commands documented in [the protocol contract](CODEX_LIVEBOARD_PROTOCOL.md), after manual connection. The default no-socket simulation is for offline verification only. Plasma must not connect directly to LiveBoard; OSCon/OSC is retired and must not be used for this integration. HTTP receipt remains distinct from execution and on-air output.
 
 ## Process and listener
 
-Mappings belong to independent [projects](CODEX_MOS_PROJECTS.md). The operator manually activates Telejurnal or Retrospectiva săptămânii for Plasma. A standalone project blocks Plasma execution with `project-disabled`, while the authenticated HTTP receipt remains successful. The envelope has no project selector and does not trigger automatic project switching. Receipt snapshots and execution reports retain their project context; deduplication is scoped to that project. Activation requires no running/queued operations and all sections OFF, and sends no commands.
+OnAir composition fix (22 October 2026): local PLAY/RESUME use the destination values already composed by the shared CSV resolver, including the configured second field and separator. Mapping `Nume` + `Functie` to both `Nume` and `Nume_M` writes the same complete string to both fields. Separate rules sharing a primary CSV column retain independent controller parameters. This fixes the local OnAir adapter; the Plasma HTTP envelope, authentication, acknowledgement and TCP protocol remain unchanged. See [the OnAir correction](CODEX_ONAIR_CSV.md#corecție-play-pentru-nume-și-funcție--22-octombrie-2026).
+
+Verification: 92 focused tests across 15 files passed, including the registered OnAir IPC handler with the real controller in simulation and localhost TCP regressions. TypeScript/Vite compilation and the updated NSIS installer passed; packaging required a permitted retry after sandbox DNS failure. Physical LiveBoard output was not tested.
+
+Mappings belong to independent [projects](CODEX_MOS_PROJECTS.md). The operator manually activates the desired project, including Telejurnal or Retrospectiva săptămânii, from the OnAir tab. A standalone project blocks Plasma execution with `project-disabled`, while the authenticated HTTP receipt remains successful. The envelope has no project selector and does not trigger automatic project switching. Receipt snapshots and execution reports retain their project context; deduplication is scoped to that project. Activation requires no running/queued operations and all sections OFF, and sends no commands. Console shows runtime status and diagnostics.
 
 The settings editor can reorder sections and duplicate an existing project's full configuration into a named standalone draft. Duplicated section/target/field/rule IDs and references are independent; the active project is unchanged. Saving only a section-order change preserves active playback and timers and sends no commands. These editor operations retain the project ingress roles above and the existing HTTP envelope.
 
 - The receiver belongs to Electron main: `electron/main/ingress/LBPortalReceiver.ts`, registered through `registerLBPortalIngress.ts`.
 - It listens on `0.0.0.0:47835`; the UI presents loopback and local IPv4 URLs so the operator can configure the Plasma machine.
 - The renderer communicates with main through the narrow typed preload API and IPC contracts. Do not expose the raw HTTP server, filesystem access, or Node APIs to the renderer.
-- Receiver state is in memory. The console keeps the newest 100 requests and clearing/restarting the app removes that history.
+- Receiver state is in memory and retains up to the newest 100 requests; the Console displays the newest 50. Clearing/restarting the app removes receiver history. Raw request JSON is formatted only when its details are opened.
 
 ## Authentication and browser policy
 

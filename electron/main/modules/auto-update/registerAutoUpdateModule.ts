@@ -119,7 +119,13 @@ export function registerAutoUpdateModule(
   })
 
   if (config.update.autoCheck && app.isPackaged) {
-    void autoUpdater.checkForUpdates().catch(() => undefined)
+    app.whenReady().then(() => {
+      setTimeout(() => {
+        void autoUpdater.checkForUpdates().catch((error: unknown) => {
+          updateLogger.failed('automatic-check', error)
+        })
+      }, 5000)
+    })
   }
 }
 

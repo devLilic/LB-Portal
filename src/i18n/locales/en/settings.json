@@ -5,9 +5,11 @@
   "mos": {
     "onAirCsv": {
       "title": "OnAir CSV source",
-      "help": "Choose the PA CSV folder used by OnAir for this project. Saving settings does not read the files.",
+      "help": "Choose the OnAir CSV folder and filename prefix for this project. For example, ES_ uses ES_titles.csv. Saving does not read the files.",
       "folder": "CSV folder",
       "folderPlaceholder": "Absolute folder path",
+      "filePrefix": "Filename prefix",
+      "invalidPrefix": "Use only letters, numbers, _ or -, and end the prefix with _.",
       "chooseFolder": "Choose folder",
       "choosing": "Choosing…",
       "clear": "Clear",
@@ -35,18 +37,22 @@
       "section": "LiveBoard section",
       "chooseSection": "Choose a section",
       "noSection": "Choose a section before mapping fields.",
+      "playbackHelp": "These settings apply to PLAY requests for this CSV template. Automatic duration resumes the section after the selected number of seconds.",
       "targets": "LiveBoard templates in this section",
       "sourceField": "CSV field",
+      "secondSourceField": "Second CSV field (optional)",
+      "noSecondSourceField": "Do not combine",
+      "sourceSeparator": "Separator between values",
       "chooseField": "Choose a CSV field",
       "destinationPlaceholder": "One destination field per line",
-      "destinationHelp": "Each line receives the value from the selected CSV field.",
+      "destinationHelp": "Each line receives the selected CSV value, or both values joined by the separator when a second field is selected.",
       "addField": "Add field mapping",
       "removeField": "Remove field mapping",
       "sectionInUse": "This section is used by an OnAir CSV mapping. Remove or move that mapping first.",
       "targetInUse": "This template is used by an OnAir CSV field mapping. Remove or update that mapping first.",
       "kinds": {"titles":"Titles","persons":"People","locations":"Locations","phones":"Phones"},
       "fields": {"Titlu":"Title","Supratitlu":"Supertitle","Nume":"Name","Functie":"Role","Locatie":"Location","Image":"Image"},
-      "validation": {"invalidStructure":"Invalid OnAir mapping structure.","duplicateId":"Mapping identifiers must be unique.","required":"Choose a value for this mapping.","invalidKind":"Unknown CSV graphic type.","duplicateSource":"This CSV graphic already has a mapping.","invalidSection":"Choose an existing LiveBoard section.","invalidSourceField":"Choose a field from this CSV graphic type.","invalidTarget":"A mapped LiveBoard template no longer exists.","invalidTargetFields":"Enter at least one destination field name.","duplicateTargetField":"A destination field is repeated."}
+      "validation": {"invalidStructure":"Invalid OnAir mapping structure.","duplicateId":"Mapping identifiers must be unique.","required":"Choose a value for this mapping.","invalidKind":"Unknown CSV graphic type.","duplicateSource":"This CSV graphic already has a mapping.","invalidSection":"Choose an existing LiveBoard section.","invalidSourceField":"Choose a field from this CSV graphic type.","duplicateSourceField":"Choose two different CSV fields.","invalidSeparator":"The separator must be text.","invalidTarget":"A mapped LiveBoard template no longer exists.","invalidTargetFields":"Enter at least one destination field name.","duplicateTargetField":"A destination field is repeated."}
     },
     "projects": {
       "editorProject": "Project being edited",
@@ -269,7 +275,7 @@
     },
     "stoppingBeforeSave": "Stopping sections before saving: {{sections}}…",
     "configuredSections": "Configured sections",
-    "projectActivated": "Active project changed to {{name}}.",
+    "projectActivated": "Activated",
     "projectSwitchDenied": {
       "LIVEBOARD_BUSY": "A LiveBoard operation is in progress. Wait for it to finish, then switch projects.",
       "LIVEBOARD_PROJECT_SWITCH_ACTIVE": "Stop the indicated sections ({{sections}}) before switching the active project.",

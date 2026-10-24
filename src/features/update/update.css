@@ -1,1 +1,28 @@
 @import '../../components/update/update.css';
+
+.update-check-button {
+  position: fixed;
+  z-index: 20;
+  right: 12px;
+  bottom: 12px;
+  padding: 5px 9px;
+  border: 1px solid #304866;
+  border-radius: 7px;
+  background: #14243a;
+  color: #dce8f7;
+  font: inherit;
+  font-size: 11px;
+  opacity: 0.78;
+  transition: opacity 140ms ease, background-color 140ms ease;
+}
+
+.update-check-button:hover,
+.update-check-button:focus-visible {
+  background: #1b3453;
+  opacity: 1;
+}
+
+.update-check-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}

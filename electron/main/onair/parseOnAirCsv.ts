@@ -9,7 +9,8 @@ import type {
   OnAirTitle,
 } from '../../../src/shared/onair/contracts'
 
-export type OnAirCsvFileName = 'PA_titles.csv' | 'PA_persons.csv' | 'PA_locations.csv' | 'PA_phones.csv'
+export type OnAirCsvFileKind = 'titles' | 'persons' | 'locations' | 'phones'
+export type OnAirCsvFileName = `${string}_${OnAirCsvFileKind}.csv`
 
 export class OnAirCsvError extends Error {
   constructor(readonly file: OnAirCsvFileName, message: string, readonly record?: number) {
@@ -24,16 +25,18 @@ interface CsvRow {
   line: number
 }
 
-const expectedHeaders: Record<OnAirCsvFileName, string[]> = {
-  'PA_titles.csv': ['Nr', 'Titlu', 'Supratitlu', 'Template'],
-  'PA_persons.csv': ['Sectiune', 'Nume', 'Functie', 'Template'],
-  'PA_locations.csv': ['Locatie'],
-  'PA_phones.csv': ['Nume', 'Functie', 'Image'],
+const expectedHeaders: Record<OnAirCsvFileKind, string[]> = {
+  titles: ['Nr', 'Titlu', 'Supratitlu', 'Template'],
+  persons: ['Sectiune', 'Nume', 'Functie', 'Template'],
+  locations: ['Locatie'],
+  phones: ['Nume', 'Functie', 'Image'],
 }
 
-const optionalTemplateHeaderFiles = new Set<OnAirCsvFileName>(['PA_locations.csv', 'PA_phones.csv'])
+const optionalTemplateHeaderFiles = new Set<OnAirCsvFileKind>(['locations', 'phones'])
 
 export function parseOnAirCsvFile(file: OnAirCsvFileName, bytes: Uint8Array): CsvRow[] {
+  const kind = fileKind(file)
+  if (!kind) throw new OnAirCsvError(file, 'Unsupported OnAir CSV file name.')
   let text: string
   try {
     text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
@@ -59,8 +62,8 @@ export function parseOnAirCsvFile(file: OnAirCsvFileName, bytes: Uint8Array): Cs
 
   if (parsed.length === 0) throw new OnAirCsvError(file, 'CSV header row is missing.')
   const header = parsed[0].record
-  const required = expectedHeaders[file]
-  const hasTemplateHeader = optionalTemplateHeaderFiles.has(file)
+  const required = expectedHeaders[kind]
+  const hasTemplateHeader = optionalTemplateHeaderFiles.has(kind)
     && header.length === required.length + 1
     && required.every((cell, index) => cell === header[index])
     && header.at(-1) === 'Template'
@@ -76,7 +79,7 @@ export function parseOnAirCsvFile(file: OnAirCsvFileName, bytes: Uint8Array): Cs
     }
     const leadingBlankLines = entry.raw.match(/^(?:[ \t]*\r\n|[ \t]*\r|[ \t]*\n)+/)?.[0]
     const startLine = consumedLineBreaks + 1 + countNewlines(leadingBlankLines ?? '')
-    const values = optionalTemplateHeaderFiles.has(file) && !hasTemplateHeader ? [...entry.record, ''] : entry.record
+    const values = optionalTemplateHeaderFiles.has(kind) && !hasTemplateHeader ? [...entry.record, ''] : entry.record
     rows.push({ values, record: entry.info.records, line: startLine })
     consumedLineBreaks += countNewlines(entry.raw)
   }
@@ -104,7 +107,9 @@ export function assembleOnAirGroups(
   personsRows: CsvRow[],
   locationsRows: CsvRow[],
   phonesRows: CsvRow[],
+  files: [OnAirCsvFileName, OnAirCsvFileName, OnAirCsvFileName, OnAirCsvFileName] = ['PA_titles.csv', 'PA_persons.csv', 'PA_locations.csv', 'PA_phones.csv'],
 ): OnAirGroup[] {
+  const [titlesFile, personsFile, locationsFile, phonesFile] = files
   const groups: ParsedGroup[] = []
   const indexesByKey = new Map<string, ParsedGroup>()
 
@@ -159,15 +164,15 @@ export function assembleOnAirGroups(
 
   for (const row of titlesRows) {
     if (isMarker(row.values[0])) {
-      if (row.values.slice(1).some(value => value.trim() !== '')) throw new OnAirCsvError('PA_titles.csv', 'Section marker rows must have empty remaining columns.', row.record)
-      activeTitleGroup = groupFor(markerName(row.values[0]), 'PA_titles.csv')
+      if (row.values.slice(1).some(value => value.trim() !== '')) throw new OnAirCsvError(titlesFile, 'Section marker rows must have empty remaining columns.', row.record)
+      activeTitleGroup = groupFor(markerName(row.values[0]), titlesFile)
       continue
     }
     if (row.values.every(value => value.trim() === '')) continue
     if (!activeTitleGroup) {
-      activeTitleGroup = implicitGroupFor('Fără secțiune', 'PA_titles.csv')
+      activeTitleGroup = implicitGroupFor('Fără secțiune', titlesFile)
     }
-    const source = itemSource('PA_titles.csv', row)
+    const source = itemSource(titlesFile, row)
     const [nr, title, supratitle, template] = row.values
     activeTitleGroup.titles.push({ id: `${activeTitleGroup.id}:title:${row.record}`, source, nr, title, supratitle, template })
   }
@@ -176,13 +181,13 @@ export function assembleOnAirGroups(
   for (const row of personsRows) {
     const [section, name, role, template] = row.values
     if (isMarker(section)) {
-      if (row.values.slice(1).some(value => value.trim() !== '')) throw new OnAirCsvError('PA_persons.csv', 'Section marker rows must have empty remaining columns.', row.record)
-      activePersonsGroup = groupFor(markerName(section), 'PA_persons.csv')
+      if (row.values.slice(1).some(value => value.trim() !== '')) throw new OnAirCsvError(personsFile, 'Section marker rows must have empty remaining columns.', row.record)
+      activePersonsGroup = groupFor(markerName(section), personsFile)
       continue
     }
     if (row.values.every(value => value.trim() === '')) continue
-    const group = activePersonsGroup ?? implicitGroupFor('Fără secțiune', 'PA_persons.csv')
-    const source = itemSource('PA_persons.csv', row)
+    const group = activePersonsGroup ?? implicitGroupFor('Fără secțiune', personsFile)
+    const source = itemSource(personsFile, row)
     group.persons.push({ id: `${group.id}:person:${row.record}`, source, name, role, template })
   }
 
@@ -200,7 +205,7 @@ export function assembleOnAirGroups(
     if (row.values.every(value => value.trim() === '')) continue
     const [location, template] = row.values
     const group = invitedGroup()
-    const source = itemSource('PA_locations.csv', row)
+    const source = itemSource(locationsFile, row)
     group.locations.push({ id: `${group.id}:location:${row.record}`, source, location, template })
   }
 
@@ -208,7 +213,7 @@ export function assembleOnAirGroups(
     if (row.values.every(value => value.trim() === '')) continue
     const [name, role, imagePath, template] = row.values
     const group = invitedGroup()
-    const source = itemSource('PA_phones.csv', row)
+    const source = itemSource(phonesFile, row)
     group.phones.push({ id: `${group.id}:phone:${row.record}`, source, name, role, imagePath, template })
   }
 
@@ -217,6 +222,11 @@ export function assembleOnAirGroups(
 
 function itemSource(file: OnAirCsvFileName, row: CsvRow): OnAirItemSource {
   return { file, record: row.record, line: row.line }
+}
+
+function fileKind(file: string): OnAirCsvFileKind | null {
+  const match = file.match(/_(titles|persons|locations|phones)\.csv$/i)
+  return (match?.[1]?.toLowerCase() as OnAirCsvFileKind | undefined) ?? null
 }
 
 function isMarker(value: string): boolean {

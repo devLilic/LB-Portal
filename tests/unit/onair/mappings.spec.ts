@@ -49,7 +49,7 @@ describe('OnAir graphic mapping validation', () => {
   it('accepts valid sections, targets and field mappings and returns a detached normalized value', () => {
     const input = [mapping]
     const result = validateOnAirMappings(input, mosMappings)
-    expect(result).toEqual([mapping])
+    expect(result).toEqual([{ ...mapping, exitMode: 'manual-resume', durationSeconds: 6 }])
     expect(result).not.toBe(input)
     expect(result[0]?.fields[0]?.targetFields['target-b']).not.toBe(mapping.fields[0]?.targetFields['target-b'])
   })
@@ -76,6 +76,17 @@ describe('OnAir graphic mapping validation', () => {
     expect(codes).toContain('invalidSection')
     expect(codes).toContain('duplicateTargetField')
     expect(() => validateOnAirMappings(invalid, mosMappings)).toThrow(/Invalid OnAir mappings/)
+  })
+
+  it('validates an optional second source field and text separator', () => {
+    const combined: OnAirGraphicMapping = { ...mapping, kind: 'persons', fields: [{
+      id: 'combined', sourceField: 'Nume', sourceField2: 'Functie', separator: ', ', targetFields: { 'target-a': ['PERSON'] },
+    }] }
+    expect(getOnAirMappingIssues([combined], mosMappings)).toEqual([])
+    expect(getOnAirMappingIssues([{ ...combined, fields: [{ ...combined.fields[0]!, sourceField2: 'Unknown' }] }], mosMappings).map(issue => issue.code)).toContain('invalidSourceField')
+    expect(getOnAirMappingIssues([{ ...combined, fields: [{ ...combined.fields[0]!, sourceField2: '' }] }], mosMappings).map(issue => issue.code)).toContain('invalidSourceField')
+    expect(getOnAirMappingIssues([{ ...combined, fields: [{ ...combined.fields[0]!, sourceField2: 'Nume' }] }], mosMappings).map(issue => issue.code)).toContain('duplicateSourceField')
+    expect(getOnAirMappingIssues([{ ...combined, fields: [{ ...combined.fields[0]!, separator: 3 as unknown as string }] }], mosMappings).map(issue => issue.code)).toContain('invalidSeparator')
   })
 })
 
@@ -114,11 +125,49 @@ describe('OnAir graphic mapping resolution and project persistence', () => {
       status: 'matched',
       sourceTemplate: '01_Titlu',
       section: { id: 'section-titles', name: 'Titluri' },
+      exitMode: 'manual-resume',
+      durationSeconds: 6,
       targets: [
         { id: 'target-a', template: 'OUT-A', fields: { TITLE_A: '', SUPER_A: 'SUPRA' } },
         { id: 'target-b', template: 'OUT-B', fields: { TITLE_B: '', TITLE_B_COPY: '', SUPER_B: 'SUPRA' } },
       ],
     })
+  })
+
+  it('combines two CSV fields into one destination and keeps legacy single-field mappings unchanged', () => {
+    const personMapping: OnAirGraphicMapping = {
+      id: 'person-map', kind: 'persons', sourceTemplate: '02_Nume', sectionId: 'section-titles',
+      fields: [{ id: 'person-name-role', sourceField: 'Nume', sourceField2: 'Functie', targetFields: { 'target-a': ['NAME_ROLE'] } }],
+    }
+    const personProject = project([personMapping])
+    expect(resolveOnAirGraphic('persons', '02_Nume', { Nume: 'ION POPESCU', Functie: 'Ministru' }, personProject)).toMatchObject({
+      status: 'matched', targets: [{ fields: { NAME_ROLE: 'ION POPESCU, Ministru' } }, {}],
+    })
+    expect(resolveOnAirGraphic('persons', '02_Nume', { Nume: 'ION POPESCU', Functie: '' }, personProject)).toMatchObject({
+      targets: [{ fields: { NAME_ROLE: 'ION POPESCU' } }, {}],
+    })
+    expect(resolveOnAirGraphic('persons', '02_Nume', { Nume: '', Functie: 'Ministru' }, personProject)).toMatchObject({
+      targets: [{ fields: { NAME_ROLE: 'Ministru' } }, {}],
+    })
+    expect(resolveOnAirGraphic('persons', '02_Nume', { Nume: '', Functie: '' }, personProject)).toMatchObject({
+      targets: [{ fields: { NAME_ROLE: '' } }, {}],
+    })
+    const explicitSeparator = project([{ ...personMapping, fields: [{ ...personMapping.fields[0]!, separator: ' / ' }] }])
+    expect(resolveOnAirGraphic('persons', '02_Nume', { Nume: 'ION POPESCU', Functie: 'Ministru' }, explicitSeparator)).toMatchObject({
+      targets: [{ fields: { NAME_ROLE: 'ION POPESCU / Ministru' } }, {}],
+    })
+    expect(resolveOnAirGraphic('titles', '01_Titlu', { Titlu: 'Legacy value' }, project())).toMatchObject({
+      targets: [{ fields: { TITLE_A: 'Legacy value' } }, { fields: { TITLE_B: 'Legacy value', TITLE_B_COPY: 'Legacy value' } }],
+    })
+  })
+
+  it('validates and resolves the configured per-template exit mode and duration', () => {
+    const timed = validateOnAirMappings([{ ...mapping, exitMode: 'template-duration', durationSeconds: 4.5 }], mosMappings)
+    expect(timed[0]).toMatchObject({ exitMode: 'template-duration', durationSeconds: 4.5 })
+    expect(resolveOnAirGraphic('titles', '01_Titlu', { Titlu: 'Timed' }, project(timed))).toMatchObject({
+      exitMode: 'template-duration', durationSeconds: 4.5,
+    })
+    expect(() => validateOnAirMappings([{ ...mapping, exitMode: 'template-duration', durationSeconds: 0 }], mosMappings)).toThrow(/invalidDuration/)
   })
 
   it('distinguishes unmapped sources from missing templates/references', () => {
@@ -134,7 +183,7 @@ describe('OnAir graphic mapping resolution and project persistence', () => {
     const config = normalizeMosProjects(mosMappings)
     const source = { ...config.projects.find(candidate => candidate.id === builtinTelejurnalProjectId)!, onAirMappings: [mapping] }
     const projects = validateMosProjects({ ...config, projects: config.projects.map(candidate => candidate.id === source.id ? source : candidate) })
-    expect(projects.projects.find(candidate => candidate.id === source.id)?.onAirMappings).toEqual([mapping])
+    expect(projects.projects.find(candidate => candidate.id === source.id)?.onAirMappings).toEqual([{ ...mapping, exitMode: 'manual-resume', durationSeconds: 6 }])
 
     let id = 0
     const copy = duplicateMosProject(source, 'Copy', () => `copy-${++id}`)
@@ -146,7 +195,7 @@ describe('OnAir graphic mapping resolution and project persistence', () => {
     const newTargetIds = copy.mappings.sections[0]?.targets.map(target => target.id)
     expect(Object.keys(duplicatedMapping!.fields[0]!.targetFields)).toEqual([newTargetIds![0], newTargetIds![1]])
     expect(duplicatedMapping!.fields[0]!.targetFields[newTargetIds![1]!]).not.toBe(mapping.fields[0]!.targetFields['target-b'])
-    expect(validateMosProjects({ ...config, projects: [...config.projects, copy] }).projects.at(-1)?.onAirMappings).toEqual(copy.onAirMappings)
+    expect(validateMosProjects({ ...config, projects: [...config.projects, copy] }).projects.at(-1)?.onAirMappings).toEqual(copy.onAirMappings?.map(item => ({ ...item, exitMode: 'manual-resume', durationSeconds: 6 })))
   })
 
   it('validates, trims, persists and independently duplicates per-project defaults', () => {

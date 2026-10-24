@@ -8,6 +8,11 @@ import {LBPortalReceiver} from './LBPortalReceiver'
 import {createSettingsStore} from '../modules/settings/settingsStore'
 import {saveSettingFromIpc} from '../modules/settings/settingsSave'
 import {resolveMosMapping} from '../../../src/shared/ingress/mosMappingResolution'
+import {resolveOnAirGraphic} from '../../../src/shared/onair/mappings'
+import type {OnAirPlaybackRequest} from '../../../src/shared/onair/contracts'
+import {onAirInvokeChannels} from '../../../src/shared/onair/contracts'
+import {normalizeMosProjects} from '../../../src/shared/settings/mosProjects'
+import type {MosMappingResolution} from '../../../src/shared/ingress/mosMappingResolution'
 function validate(event:Electron.IpcMainInvokeEvent){const url=event.senderFrame?.url??'';if(url.startsWith('file://'))return;const dev=process.env.VITE_DEV_SERVER_URL;if(dev&&new URL(url).origin===new URL(dev).origin)return;throw Error('Untrusted renderer.')}
 export function registerLBPortalIngress(getWindow:()=>BrowserWindow|null){
  const settings=createSettingsStore(app.getPath('userData'))
@@ -38,5 +43,36 @@ export function registerLBPortalIngress(getWindow:()=>BrowserWindow|null){
    if('ok' in result&&result.ok===false)return {ok:false,error:{code:result.error.code,sectionNames:result.error.sectionNames}}
    return {ok:true,value:controller.snapshot}
  })
+ ipcMain.handle(onAirInvokeChannels.playItem,async(event,raw:unknown)=>{
+   validate(event)
+   const request=validateOnAirPlaybackRequest(raw)
+   const current=normalizeMosProjects(settings.getSetting('mosMappings'))
+   const project=current.projects.find(item=>item.id===current.activeProjectId)!
+   if(request.projectId!==project.id)throw Error('OnAir item belongs to a project that is not active.')
+   const resolution=resolveOnAirGraphic(request.kind,request.sourceTemplate,request.values,project)
+   if(resolution.status!=='matched')throw Error(`OnAir graphic mapping is ${resolution.status}.`)
+   const section=project.mappings.sections.find(item=>item.id===resolution.section.id)
+   if(!section)throw Error('OnAir mapping section is unavailable in the active project.')
+   const onAirMapping=project.onAirMappings?.find(item=>item.kind===request.kind&&item.sourceTemplate===resolution.sourceTemplate)
+   if(!onAirMapping)throw Error('OnAir graphic mapping is unavailable in the active project.')
+   const mapping:Extract<MosMappingResolution,{status:'matched'}>={
+     status:'matched',template:resolution.sourceTemplate,commandType:request.action==='play'?'mos-play':'mos-resume',
+     project:{id:project.id,name:project.name,kind:project.kind},section:resolution.section,
+     targets:resolution.targets.map(target=>({id:target.id,template:target.template,fields:onAirMapping.fields.flatMap(field=>{const fields=field.targetFields[target.id]??[];return fields.length?[{param:field.id,fields:[...fields],value:target.fields[fields[0]!]??''}]:[]})})),
+     exitMode:resolution.exitMode,durationSeconds:resolution.durationSeconds,
+     resumePlayDelayMs:section.resumePlayDelayMs,dataPropagationDelayMs:section.dataPropagationDelayMs??250,missingParams:[],unmappedParams:[],
+   }
+   const report=request.action==='play'
+     ?await controller.execute({requestId:`onair:${request.itemId}:${Date.now()}`,template:request.sourceTemplate,mapping,allowStandalone:true})
+     :await controller.resumeSource(request.sourceTemplate,mapping,true,true)
+   return {itemId:request.itemId,kind:request.kind,sourceTemplate:resolution.sourceTemplate,execution:report}
+ })
  app.on('before-quit',()=>{void receiver.close();controller.dispose()});void receiver.start();return receiver
+}
+function validateOnAirPlaybackRequest(value:unknown):OnAirPlaybackRequest {
+ if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Invalid OnAir playback request.')
+ const raw=value as Record<string,unknown>
+ if(typeof raw.projectId!=='string'||!raw.projectId||raw.projectId.length>200||typeof raw.itemId!=='string'||!raw.itemId||raw.itemId.length>300||typeof raw.sourceTemplate!=='string'||raw.sourceTemplate.length>500||!['titles','persons','locations','phones'].includes(String(raw.kind))||!['play','resume'].includes(String(raw.action)))throw Error('Invalid OnAir playback request.')
+ if(!raw.values||typeof raw.values!=='object'||Array.isArray(raw.values)||Object.entries(raw.values).length>20||Object.entries(raw.values).some(([key,item])=>!key||key.length>100||typeof item!=='string'||item.length>10000))throw Error('Invalid OnAir playback values.')
+ return {projectId:raw.projectId,kind:raw.kind as OnAirPlaybackRequest['kind'],itemId:raw.itemId,sourceTemplate:raw.sourceTemplate,values:raw.values as Record<string,string>,action:raw.action as OnAirPlaybackRequest['action']}
 }

@@ -14,6 +14,7 @@
   },
   "executableName": "LB-Portal",
   "mac": {
+    "icon": "build/icon.icns",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
     "target": [
       "dmg",
@@ -21,6 +22,7 @@
     ]
   },
   "win": {
+    "icon": "build/icon.ico",
     "executableName": "LB-Portal",
     "target": [
       {

@@ -1,18 +1,34 @@
 # Development Workflow
 
+Versiunile și publicarea installerului Windows prin taguri Git sunt descrise în [ghidul de release](RELEASING.md).
+
 ## OnAir / CSV per proiect
 
-[OnAir CSV](CODEX_ONAIR_CSV.md) descrie importul manual al celor patru exporturi PA, folderul configurat per proiect, selectorul independent și snapshoturile păstrate numai în sesiune. Refresh citește și validează în main, apoi afișează grupurile în renderer prin IPC tipizat. Consultarea CSV nu activează proiectul și nu trimite comenzi LiveBoard. Citiți documentul înainte de modificarea parserului, memoriei sau configurării sursei.
+Selectorul proiectului OnAir este și selectorul proiectului de execuție LiveBoard. Operatorul activează alegerea explicit din OnAir; Consola rămâne pentru stare runtime și diagnosticare. Activarea este blocată de aceleași condiții runtime și nu trimite comenzi. Contractul și scenariul QA sunt descrise în [proiecte MOS](CODEX_MOS_PROJECTS.md) și [OnAir CSV](CODEX_ONAIR_CSV.md).
 
-OnAir afișează grupurile în taburi cu Invitați (Platou) primul și supratitlul deasupra titlului. Setările per proiect includ mapări CSV → secțiuni/targeturi/câmpuri LiveBoard, cu chei tip + template sursă și previzualizarea valorilor pregătite. Aceste mapări sunt separate de sursele MOS; resolverul și regulile de validare/duplicare sunt descrise în contractul OnAir și în [editor](CODEX_MOS_MAPPING_EDITOR.md).
+Corecția PLAY pentru câmpuri compuse din 22 octombrie 2026 este descrisă în [contractul OnAir](CODEX_ONAIR_CSV.md#corecție-play-pentru-nume-și-funcție--22-octombrie-2026): PLAY și Resume folosesc valorile compuse de resolver, astfel încât `Nume` și `Nume_M` primesc același nume cu funcție. Cheia sursă CSV și numele contentului destinație LiveBoard se configurează separat.
+
+Verificarea corecției: 92 teste în 15 fișiere trecute, inclusiv handlerul IPC PLAY/Resume cu controller real în simulare și testele TCP localhost cu permisiunile necesare. Detaliile și limitarea verificării video sunt în contractul OnAir.
+
+TypeScript/Vite și installerul NSIS actualizat au trecut; împachetarea a necesitat reluare cu acces în afara sandboxului după eroarea DNS `github.com`. Artefact: `release/0.1.0/LB-Portal-0.1.0-x64.exe`, fără publicare de release.
+
+[OnAir CSV](CODEX_ONAIR_CSV.md) descrie importul manual al celor patru exporturi per proiect, cu folder și prefix configurate per proiect (implicit `PA_`, de exemplu `ES_`); schimbarea prefixului rebazează cheile sursă OnAir care folosesc prefixul anterior. Selectorul unic alege sursa CSV și proiectul de execuție, iar snapshoturile se păstrează numai în sesiune. Activarea se face separat și explicit în OnAir; selecția singură nu schimbă proiectul activ și activarea nu trimite comenzi. Refresh citește și validează în main, apoi afișează grupurile în renderer prin IPC tipizat. Butoanele explicite per element folosesc mapările validate în main și controllerul LiveBoard, cu proiectul afișat deja activ. Citiți documentul înainte de modificarea parserului, memoriei, configurării sursei sau acțiunilor locale.
+
+OnAir afișează grupurile în taburi cu Invitați (Platou) primul și supratitlul deasupra titlului. Setările per proiect includ mapări CSV → secțiuni/targeturi/câmpuri LiveBoard, cu chei tip + template sursă și previzualizarea valorilor pregătite. O mapare poate uni două câmpuri CSV într-un câmp destinație, cu separator configurabil și implicit `, `; textele păstrează casing-ul din CSV, iar valorile goale nu produc separatori rămași. Fiecare mapare OnAir configurează separat ieșirea manuală sau după durată; setările și schema MOS Telejurnal rămân nemodificate. Aceste mapări sunt separate de sursele MOS; resolverul și regulile de validare/duplicare sunt descrise în contractul OnAir și în [editor](CODEX_MOS_MAPPING_EDITOR.md).
 
 Pentru locații și intervenții telefonice, setările includ template-uri implicite per proiect, folosite numai când CSV-ul nu furnizează un `Template` nevid. Catalogul și previzualizarea folosesc aceeași regulă; fișierele originale nu sunt modificate.
 
-Titlurile folosesc o coloană comună pentru numărul original CSV, într-un chenar rotunjit cât înălțimea blocului, și aliniază supratitlul/titlul la aceeași margine. Bara fixă de instrumente din stânga oferă Refresh CSV și la capătul listelor lungi, prin aceeași operație existentă; detaliile sunt în contractul OnAir.
+Titlurile folosesc o coloană comună pentru numărul original CSV, într-un chenar rotunjit cât înălțimea blocului, și aliniază supratitlul/titlul la aceeași margine. Bara fixă vizibilă din stânga ocupă viewportul și oferă Refresh 48 × 48 px. Butoanele PLAY/Resume sunt per element mapat; altă grafică activă permite trecerea A/B, iar Resume cere ca template-ul și valorile să corespundă elementului activ. Detaliile sunt în contractul OnAir.
 
 Verificarea extinderii OnAir din 21 octombrie 2026: 141 teste relevante, 45 verificări Electron izolate, QA renderer la 640/1280/1920 px și build NSIS trecute. Documentul OnAir consemnează separat rezultatele etapei inițiale, limitările suitei generale, expirarea capturilor native Electron și comanda de împachetare cu distribuția Electron instalată pentru eroarea locală de redenumire `EPERM`.
 
+Verificarea PLAY/Resume OnAir din 22 octombrie 2026: 33 teste relevante în 4 fișiere și `npx tsc --noEmit` au trecut. Compilarea TypeScript/Vite main/preload/renderer a trecut. NSIS nu s-a împachetat deoarece electron-builder a eșuat la rezolvarea DNS `github.com` (`ENOTFOUND`); nicio schemă sau setare Telejurnal nu a fost modificată.
+
+Verificarea compunerii câmpurilor CSV în OnAir din 22 octombrie 2026: 12 teste unitare OnAir și `npx tsc --noEmit` au trecut; `git diff --check` a trecut. Schimbarea păstrează mapările existente cu o singură sursă și nu modifică schema setărilor Telejurnal/MOS.
+
 ## Plasma / LB-Portal ingress contract
+
+The receiver keeps up to 100 recent requests in memory; the Console renders the newest 50 and formats a raw request body only when its details are opened. This is a renderer performance/display limit and does not change HTTP receipt or execution behavior.
 
 The [automatic-duration acknowledgement](CODEX_PLASMA_INGRESS_CONTRACT.md#automatic-graphic-duration-in-the-acknowledgement) extends confirmed automatic PLAY responses with `automaticDurationSeconds` and `remainingDurationMs`. Plasma uses the remaining time for a per-section UI countdown back to default/PLAY; identical requests preserve the active deadline and expired/replaced instances report zero. Update LB-Portal first, then Plasma. Focused receiver/controller/TCP-mock and frontend timer regressions cover the shared contract.
 

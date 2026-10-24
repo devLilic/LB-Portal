@@ -2,9 +2,9 @@
 
 ## Rol și sursă
 
-OnAir este a treia zonă de lucru din LB-Portal, alături de Consolă și Setări. Selectorul său de proiect este independent de proiectul activ pentru execuție: consultarea datelor unui proiect nu îl activează și nu trimite comenzi LiveBoard.
+OnAir este zona de lucru pentru operatori, alături de Consolă și Setări. Selectorul unic din bara OnAir alege proiectul ale cărui CSV-uri sunt consultate și proiectul care poate fi activat pentru execuție. Alegerea nu schimbă singură proiectul activ; operatorul apasă explicit „Activează proiectul”. Activarea nu trimite comenzi LiveBoard.
 
-În Setări, fiecare proiect poate salva o sursă `onAirCsv` opțională, cu formatul `pa-csv` și `folderPath`. Alegerea unui folder modifică draftul; salvarea este explicită. Ștergerea căii dezactivează sursa. Configurațiile v2 existente și scrierile prin adaptorul v1 rămân compatibile. Copierea unui proiect copiază configurația sursei într-un obiect independent; datele deja încărcate nu se copiază.
+În Setări, fiecare proiect poate salva o sursă `onAirCsv` opțională, cu formatul `pa-csv`, `folderPath` și `filePrefix`. Prefixul implicit este `PA_`; pentru un export diferit se poate introduce, de exemplu, `ES_`. Prefixul trebuie să se termine cu `_` și este aplicat celor patru nume de fișier. La schimbarea prefixului, cheile `sourceTemplate` din mapările OnAir care încep cu prefixul anterior sunt rebazate la noul prefix; câmpurile și destinațiile mapării rămân neschimbate. Schimbarea folderului ori editarea prefixului modifică draftul; salvarea este explicită. Ștergerea căii dezactivează sursa. Configurațiile v2 existente și scrierile prin adaptorul v1 rămân compatibile; câmpurile lipsă sunt citite ca `PA_`. Copierea unui proiect copiază configurația sursei într-un obiect independent; datele deja încărcate nu se copiază.
 
 Grupurile sunt prezentate în taburi. „Invitați (Platou)” este primul și selectat inițial; apoi urmează beta-urile în ordinea exportului. Dacă exportul nu are grup de invitați, interfața păstrează un tab gol pentru platou, fără să inventeze înregistrări în snapshot. Alegerea manuală a unui beta se păstrează la Refresh dacă grupul continuă să existe. Supratitlul este afișat deasupra titlului.
 
@@ -14,14 +14,18 @@ OnAir include o bară îngustă de instrumente fixată în stânga viewportului,
 
 Folderul de pe calculatorul de dezvoltare pentru Punctul pe Azi este `C:\Projects\_CSV\PA\Export`. Calea este o setare locală a proiectului, nu o constantă de import și nu o cale implicită pentru celelalte proiecte.
 
-## Cele patru exporturi PA
+## Cele patru exporturi OnAir
 
 | Fișier | Coloane necesare | Semnificație |
 | --- | --- | --- |
-| `PA_titles.csv` | `Nr`, `Titlu`, `Supratitlu`, `Template` | Titluri în ordinea exportată, numerotate în interiorul grupului. |
-| `PA_persons.csv` | `Sectiune`, `Nume`, `Functie`, `Template` | Persoane fără fotografie, grupate editorial. |
-| `PA_locations.csv` | `Locatie` | Locațiile grupului INVITAȚI. |
-| `PA_phones.csv` | `Nume`, `Functie`, `Image` | Intervenții telefonice din INVITAȚI: persoană și cale fotografie; nu numere telefonice. |
+| `{prefix}titles.csv` (implicit `PA_titles.csv`) | `Nr`, `Titlu`, `Supratitlu`, `Template` | Titluri în ordinea exportată, numerotate în interiorul grupului. |
+| `{prefix}persons.csv` (implicit `PA_persons.csv`) | `Sectiune`, `Nume`, `Functie`, `Template` | Persoane fără fotografie, grupate editorial. |
+| `{prefix}locations.csv` (implicit `PA_locations.csv`) | `Locatie` | Locațiile grupului INVITAȚI. |
+| `{prefix}phones.csv` (implicit `PA_phones.csv`) | `Nume`, `Functie`, `Image` | Intervenții telefonice din INVITAȚI: persoană și cale fotografie; nu numere telefonice. |
+
+Refresh folosește prefixul setat explicit pentru proiect și nu combină fișiere cu prefixe diferite chiar dacă sunt în același folder. Valorile `Template` din rânduri sunt păstrate exact. Mapările OnAir folosesc cheia `sourceTemplate` exactă; la schimbarea explicită a prefixului CSV, interfața actualizează cheile care foloseau prefixul configurat anterior. Numele fișierelor și template-urile rămân identificatori separați.
+
+Prefixul se aplică celor patru exporturi din tabel. Fișiere suplimentare precum `quickTitles.csv` sau `wait_titles_locations.csv` nu fac parte din contractul OnAir curent și nu sunt citite.
 
 Semantica a fost verificată în exportatorul csvEditor-PA (`paEntityExportMapper.ts`). Rândurile `--- ... ---` sunt markeri de grup în prima coloană a exporturilor de titluri/persoane. Titlurile și persoanele sunt liste independente; nu se corelează după poziție sau număr. Grupurile comune se reunesc după marker și se păstrează ordinea sursei, inclusiv duplicatele valide. Locațiile și intervențiile apar la INVITAȚI. Grupurile repetate nu trebuie comprimate accidental.
 
@@ -37,23 +41,43 @@ Importatorul verifică metadatele fișierelor înainte și după citire și reia
 
 ## Securitate și pregătirea pentru LiveBoard
 
-Filesystemul și parserul aparțin Electron main. Preload expune numai operații tipizate pentru lista proiectelor, alegerea folderului, snapshot și Refresh după ID de proiect. Main rezolvă calea din setările salvate și validează expeditorul IPC. Rendererul nu primește API Node sau citire arbitrară de fișiere. Fotografiile sunt deocamdată reprezentate prin calea text, fără încărcare de URL-uri din CSV.
+Filesystemul și parserul aparțin Electron main. Preload expune numai operații tipizate pentru lista proiectelor, alegerea folderului, snapshot, Refresh și PLAY/RESUME de element OnAir după ID de proiect. Main rezolvă calea din setările salvate și validează expeditorul IPC. Rendererul nu primește API Node sau citire arbitrară de fișiere. Fotografiile sunt deocamdată reprezentate prin calea text, fără încărcare de URL-uri din CSV.
 
 `Template` este cheia sursă a graficii, păstrată exact din CSV. În Setări → proiect → Mapări CSV OnAir, operatorul selectează un tip și template detectat în importul deja încărcat, alege secțiunea LiveBoard și configurează câmpurile pentru fiecare destinație A/B existentă. Consultarea catalogului folosește numai memoria; exporturile se citesc în continuare exclusiv prin Refresh în OnAir. Nu se presupune că numele template-ului CSV este și numele contentului LiveBoard.
 
-Mapările sunt salvate în proprietatea opțională `onAirMappings` a proiectului. Cheia unei mapări este perechea tip de element + nume template efectiv; destinațiile sunt referințe la secțiunile și targeturile proiectului. Parametrii disponibili sunt `Titlu`/`Supratitlu`, `Nume`/`Functie`, `Locatie`, respectiv `Nume`/`Functie`/`Image`. O valoare sursă poate alimenta mai multe câmpuri destinație. Șirurile goale se păstrează ca valori valide. Resolverul comun produce template-urile și valorile câmpurilor LiveBoard, afișate în OnAir pentru verificare.
+Mapările sunt salvate în proprietatea opțională `onAirMappings` a proiectului. Cheia unei mapări este perechea tip de element + nume template efectiv; destinațiile sunt referințe la secțiunile și targeturile proiectului. Parametrii disponibili sunt `Titlu`/`Supratitlu`, `Nume`/`Functie`, `Locatie`, respectiv `Nume`/`Functie`/`Image`. O mapare poate utiliza un câmp CSV sau două câmpuri CSV unite într-o singură valoare destinație. Al doilea câmp este opțional; separatorul este configurabil și implicit `, `. Dacă una dintre valori este goală, cealaltă este trimisă fără separator. Textele își păstrează forma și majusculele din CSV, fără transformare de casing. O valoare compusă poate alimenta mai multe câmpuri destinație. Resolverul comun produce template-urile și valorile câmpurilor LiveBoard, afișate în OnAir pentru verificare.
 
 Mapările nu sunt surse MOS și nu modifică resolverul receiverului Plasma. Proiectele existente fără această proprietate rămân valide; adaptorul legacy o păstrează. Duplicarea proiectului copiază configurația cu identificatori noi și referințe refăcute către propriile secțiuni/targeturi. Destinațiile referite nu pot fi eliminate lăsând mapări orfane. Salvarea exclusivă a mapărilor OnAir păstrează runtime-ul și temporizatoarele existente.
+
+Fiecare element poate fi executat explicit cu PLAY și, cât timp este chiar elementul activ, cu Resume. Preload-ul expune `onAirApi.playItem({ projectId, kind, itemId, sourceTemplate, values, action })`; răspunsul întoarce aceleași `itemId`, `kind`, `sourceTemplate` și raportul controllerului. Rendererul trimite numai valorile PA; main validează expeditorul, verifică proiectul activ și rezolvă din nou maparea salvată înainte de a folosi controllerul LiveBoard existent. Proiectele standalone permit aceste acțiuni manuale OnAir; restricția pentru cererile Plasma rămâne neschimbată.
+
+PLAY folosește destinațiile A/B, câmpurile, propagarea datelor și întârzierile secțiunii configurate. Durata și modul de ieșire provin din sursa secțiunii al cărei template coincide exact cu template-ul OnAir efectiv; fără o astfel de sursă configurată, elementul este manual. Resume verifică în main că proiectul, sursa, bufferul activ și valorile bufferului corespund elementului cerut. Resume-ul manual este blocat pentru o grafică activă cu durată automată configurată. Aceste comenzi folosesc numai transportul TCP LBC al controllerului; nu schimbă contractul HTTP Plasma și nu introduc OSCon/OSC.
 
 Pentru locații și intervenții, proiectul poate configura `onAirDefaultTemplates: { locations?: string, phones?: string }` în setările sursei CSV. Aceste nume manuale se folosesc când înregistrarea nu furnizează un `Template` nevid. Un nume primit din CSV are prioritate și se păstrează exact. Parserul acceptă și coloana suplimentară `Template` la finalul antetului acestor exporturi, păstrând compatibilitatea cu fișierele vechi. Dacă lipsesc și valoarea CSV, și configurația implicită, se afișează un diagnostic explicit; nu se inventează nume.
 
 Template-ul efectiv este folosit atât în catalogul editorului, cât și în badge-ul elementului și în resolver. Înregistrările din snapshot păstrează valorile originale ale CSV-ului; modificarea template-ului implicit nu recitește fișierele și nu invalidează importul. Configurația implicită aparține proiectului și se copiază independent la duplicare.
 
-OnAir nu produce cereri MOS simulate și nu activează proiecte. Contractul HTTP Plasma, autentificarea, CORS, confirmările, controllerul și comenzile TCP LBC rămân cele descrise în [contractul ingress](CODEX_PLASMA_INGRESS_CONTRACT.md). Nu se introduce OSCon/OSC.
+OnAir nu produce cereri HTTP către Plasma. Din selectorul unic OnAir se poate activa explicit proiectul ales, inclusiv Telejurnal, Retrospectiva și proiectele standalone; schimbarea selecției singură nu activează proiectul. Activarea folosește verificările runtime existente și nu trimite comenzi LiveBoard. Pentru PLAY/RESUME explicit, proiectul selectat în OnAir trebuie să fie și proiectul activ în LiveBoard. Butonul fiecărui element trimite către Electron main doar ID-ul proiectului, tipul/template-ul și valorile CSV, iar main revalidează maparea salvată și execută prin coada și controllerul LiveBoard existente, cu A/B, pauzele și regulile de durată configurate. În modul simulare comenzile nu folosesc socket; în modul TCP sunt trimise prin LBControl. Câmpurile destinație nu sunt acceptate de la renderer. Resume este permis numai pentru grafica acelui element, identificată prin template și valorile bufferului activ. Dacă în secțiune este activ alt element, PLAY rămâne disponibil pentru trecerea la destinația A/B următoare. Fiecare mapare OnAir își salvează separat modul de ieșire manual sau prin durată de template și durata; setările și schema MOS pentru Telejurnal nu sunt modificate. Ieșirea automată nu poate fi închisă manual din butonul OnAir. Proiectele standalone permit aceste acțiuni manuale explicite, dar rămân dezactivate pentru cererile Plasma. Contractul HTTP Plasma, autentificarea și CORS nu se schimbă. Nu se introduce OSCon/OSC.
 
 ## Verificare
 
+### Corecție PLAY pentru nume și funcție — 22 octombrie 2026
+
+Ruta locală PLAY/RESUME folosește valorile destinație deja compuse de resolverul comun, inclusiv al doilea câmp CSV și separatorul salvat. Nu reconstruiește valoarea numai din primul câmp. Pentru `Nume` + `Functie`, separator `, ` și destinațiile `Nume`/`Nume_M`, ambele câmpuri primesc exact `IRINA BEJENARU, jurnalist TVR Moldova`. Regulile distincte care pornesc din aceeași coloană CSV pot avea compoziții diferite fără conflict între parametrii interni ai controllerului. Resume verifică aceleași valori compuse ca PLAY.
+
+Configurare: cheia sursă rămâne template-ul exact din CSV (`02_Nume` în exportul PA verificat); contentul destinație trebuie configurat cu numele exact încărcat în LiveBoard (`PA_02_Nume` dacă acesta este numele real). O singură regulă trimite aceeași valoare compusă către ambele destinații text. După salvare și repornirea versiunii actualizate LB-Portal, se reîncarcă CSV și se execută din nou PLAY; bufferul deja activ nu se rescrie prin simpla salvare a mapării.
+
+Verificare: **92 teste trecute în 15 fișiere**, pentru OnAir, ingress, controller/transport LiveBoard și setările sursei CSV. Regresia nouă `tests/unit/onair/registeredPlayback.spec.ts` a reprodus pierderea funcției înainte de corecție și verifică handlerul IPC înregistrat cu controllerul real în simulare: valorile compuse egale în `Nume`/`Nume_M`, trecerea A/B, separator alternativ, reguli cu aceeași sursă primară, câmp sursă gol, mapare simplă și Resume. Testele TCP folosesc numai servere localhost; sandboxul a blocat inițial conexiunile cu `EACCES`, apoi aceeași suită a trecut cu permisiunile necesare. Nu s-a verificat output video fizic.
+
+Compilarea TypeScript și bundle-urile Vite renderer/main/preload au trecut. Împachetarea inițială a eșuat la DNS `github.com`; reluarea `npx electron-builder --publish never --config.electronDist=node_modules/electron/dist` cu accesul necesar a trecut și a generat installerul actualizat `release/0.1.0/LB-Portal-0.1.0-x64.exe`. Nu s-a publicat release și nu s-au modificat setările operatorului ori fișierele CSV.
+
 Testele acoperă parserul, grupurile, izolarea proiectelor, păstrarea snapshotului la eșec, schimbarea sursei și răspunsurile întârziate, configurația salvată și navigarea cu draft nesalvat. Build-ul verifică integrarea main/preload/renderer. Probele nu confirmă output video fizic pe LiveBoard.
+
+### Acțiuni locale PLAY/RESUME și instrumente fixe — 22 octombrie 2026
+
+Bara OnAir ocupă înălțimea viewportului, iar Refresh CSV are 48 × 48 px. Fiecare element mapat oferă PLAY sau Resume după starea secțiunii LiveBoard și dacă bufferul activ conține exact template-ul și valorile acelui element. Un alt element activ permite PLAY cu tranziția A/B. Proiectul greșit, ocuparea secțiunii, resincronizarea necesară ori durata automată a elementului curent dezactivează acțiunea cu un indiciu explicativ. Modul de ieșire și durata sunt configurate per mapare OnAir, separat de schema/setările MOS Telejurnal. PLAY/RESUME folosește numai controllerul LiveBoard existent din Electron main; această operație locală nu este o cerere Plasma și nu schimbă payloadul HTTP sau bridge-ul de ingress. Proiectele standalone sunt acceptate numai pe ruta OnAir explicită.
+
+Verificare la 22 octombrie 2026: **33 teste relevante în 4 fișiere trecute**, `npx tsc --noEmit` și verificarea whitespace au trecut. Compilările TypeScript și bundle-urile Vite pentru renderer/main/preload au trecut. Împachetarea NSIS s-a oprit când electron-builder a încercat accesul la `github.com` și DNS a răspuns `ENOTFOUND`; pachetul instalabil nu a fost generat. Testele includ modul de ieșire configurat OnAir, template-uri cu mapare numai în B, Resume doar pe elementul activ, protecția duratei automate și execuția manuală standalone fără a permite cererile Plasma în proiecte standalone.
 
 ### Ajustări vizuale: număr comun și instrumente fixe — 21 octombrie 2026
 
@@ -75,6 +99,6 @@ Compilarea TypeScript/Vite și împachetarea NSIS au trecut pentru afișarea num
 - Citirea read-only a exporturilor reale a confirmat 9 titluri, 8 persoane, o locație și o intervenție, în grupurile `beta 1 - Nato`, `beta 2 - Sedința Parlament`, `INVITATI`. Fișierele sursă nu au fost modificate.
 - O rulare a întregii suite a trecut 238/242 verificări. Cele patru eșecuri sunt în zone nemodificate: două teste SQLite folosesc Node 24 (ABI 137) cu binarul compilat pentru Electron (ABI 130), lista veche de canale IPC nu include două canale existente de licențiere, iar un fixture de licențiere cu date calendaristice fixe nu mai satisface așteptarea perioadei de grație. Acestea nu sunt raportate ca teste trecute.
 
-`node scripts/qa-onair-renderer.cjs` folosește distribuția instalată Edge, un server static peste `dist` și API-uri fictive. Verifică selecția independentă, răspunsurile întârziate, lipsa Refresh-ului implicit, invalidarea sursei, observarea repetată a stării unei operații deja pornite și layoutul la 640/1280/1920 px. Citirile repetate ale snapshotului cât timp acesta este `busy` nu inițiază un nou import. Capturile sunt în `node_modules/.cache/onair-qa/` și nu se comit.
+`node scripts/qa-onair-renderer.cjs` folosește distribuția instalată Edge, un server static peste `dist` și API-uri fictive. Verifică selectorul unic de proiect, activarea explicită și separarea selecției de activare, răspunsurile întârziate, lipsa Refresh-ului implicit, invalidarea sursei, observarea repetată a stării unei operații deja pornite și layoutul la 640/1280/1920 px. Citirile repetate ale snapshotului cât timp acesta este `busy` nu inițiază un nou import. Capturile sunt în `node_modules/.cache/onair-qa/` și nu se comit.
 
 Pe acest calculator, împachetarea standard a întâmpinat `EPERM` la redenumirea directorului temporar al arhivei Electron. Împachetarea a reușit folosind distribuția deja instalată, aceeași versiune 33.4.11: `npm run build -- --publish never --config.electronDist=node_modules/electron/dist`. Nu se schimbă versiunea runtime și nu se publică un release GitHub.

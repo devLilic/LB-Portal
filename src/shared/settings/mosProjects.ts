@@ -86,7 +86,13 @@ export function validateOnAirCsvSource(value: unknown): OnAirCsvSource {
   if (!folderPath || folderPath.includes('\0') || !isAbsoluteDirectoryPath(folderPath)) {
     throw new Error('OnAir CSV folder path must be a nonempty absolute directory path.')
   }
-  return { format: 'pa-csv', folderPath }
+  if (value.filePrefix === undefined) return { format: 'pa-csv', folderPath }
+  if (typeof value.filePrefix !== 'string') throw new Error('OnAir CSV file prefix must be a string.')
+  const filePrefix = value.filePrefix.trim()
+  if (!/^[A-Za-z0-9_-]{1,31}_$/.test(filePrefix)) {
+    throw new Error('OnAir CSV file prefix must contain only letters, numbers, underscores, or hyphens and end with an underscore.')
+  }
+  return { format: 'pa-csv', folderPath, filePrefix }
 }
 
 export function validateOnAirDefaultTemplates(value: unknown): OnAirDefaultTemplates {
