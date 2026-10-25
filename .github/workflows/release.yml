@@ -41,7 +41,21 @@ jobs:
             throw "Tag $env:GITHUB_REF_NAME does not match package version $packageVersion (expected $expectedTag)."
           }
 
-      - name: Build and publish Windows release
-        run: npm run build -- --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Windows release assets
+        run: npm run build -- --publish never
+
+      # Keep release creation outside electron-builder. Its GitHub publisher can
+      # issue parallel create-release requests for the generated assets, which
+      # can race and create duplicate releases for the same tag.
+      - name: Publish Windows release assets
+        uses: softprops/action-gh-release@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ github.ref_name }}
+          name: LB-Portal ${{ github.ref_name }}
+          body: LB-Portal ${{ github.ref_name }}
+          files: |
+            release/**/LB-Portal-*-x64.exe
+            release/**/LB-Portal-*-x64.exe.blockmap
+          fail_on_unmatched_files: true
+          overwrite_files: true
