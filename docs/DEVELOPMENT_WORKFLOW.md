@@ -6,6 +6,10 @@ Versiunile și publicarea installerului Windows prin taguri Git sunt descrise î
 
 Selectorul proiectului OnAir este și selectorul proiectului de execuție LiveBoard. Operatorul activează alegerea explicit din OnAir; Consola rămâne pentru stare runtime și diagnosticare. Activarea este blocată de aceleași condiții runtime și nu trimite comenzi. Contractul și scenariul QA sunt descrise în [proiecte MOS](CODEX_MOS_PROJECTS.md) și [OnAir CSV](CODEX_ONAIR_CSV.md).
 
+Graficele fixe configurate opțional în proiect (de exemplu logo sau burtieră constantă) apar în OnAir fără snapshot CSV. Valorile și destinațiile sunt citite din proiectul salvat în Electron main și trimise prin controllerul local; payloadul Plasma și contractul receiverului rămân neschimbate. Detalii în [contractul proiectelor](CODEX_MOS_PROJECTS.md).
+
+Fila de mapări CSV OnAir este disponibilă doar în editorul proiectelor aflate în modul **Fișiere CSV**; proiectele `plasma.test` păstrează filele pentru secțiuni, interacțiuni și grafici fixe.
+
 Corecția PLAY pentru câmpuri compuse din 22 octombrie 2026 este descrisă în [contractul OnAir](CODEX_ONAIR_CSV.md#corecție-play-pentru-nume-și-funcție--22-octombrie-2026): PLAY și Resume folosesc valorile compuse de resolver, astfel încât `Nume` și `Nume_M` primesc același nume cu funcție. Cheia sursă CSV și numele contentului destinație LiveBoard se configurează separat.
 
 Verificarea corecției: 92 teste în 15 fișiere trecute, inclusiv handlerul IPC PLAY/Resume cu controller real în simulare și testele TCP localhost cu permisiunile necesare. Detaliile și limitarea verificării video sunt în contractul OnAir.
@@ -44,15 +48,15 @@ Interaction-stage verification (15 October 2026): **90 focused LB-Portal tests, 
 
 LB-Portal starts maximized with standard window controls and DevTools disabled. Preserve the unsaved-settings close warning when changing window initialization.
 
-The [projects contract](CODEX_MOS_PROJECTS.md) defines independent section sets, legacy migration into Telejurnal, and manual active-project selection. Only Telejurnal and Retrospectiva săptămânii accept Plasma execution; standalone projects block it. Editing a project does not activate it. Activation requires an idle controller with all sections OFF and sends no LiveBoard commands.
+The [projects contract](CODEX_MOS_PROJECTS.md) defines an empty fresh installation, operator-created projects, legacy migration that preserves existing data, per-project CSV/Plasma mode, validated JSON project export/import, and manual active-project selection. Any Plasma-mode project can receive Plasma requests; CSV-mode projects block execution. Editing a project does not activate it. Activation requires an idle controller with all sections OFF and sends no LiveBoard commands.
 
-The editor supports section reordering with saved display order and project duplication into an independently named standalone copy. Duplication remaps all internal field/interaction references; order-only saves preserve active buffers and timers. See the projects and [editor contract](CODEX_MOS_MAPPING_EDITOR.md) for the operator flow and verification.
-
-Editor extension verification (19 October 2026): 44 focused unit tests, compiled-renderer workflow/layout checks and the TypeScript/Vite/NSIS build passed. The general Electron probe stops at the existing hidden suspend-step list in expanded request details; the [projects verification record](CODEX_MOS_PROJECTS.md#extensia-editorului--19-octombrie-2026) records this limitation separately from the passing new-feature checks.
+The editor supports section reordering with saved display order and project duplication into an independently named copy that starts in CSV mode. Duplication remaps all internal field/interaction references; order-only saves preserve active buffers and timers. See the projects and [editor contract](CODEX_MOS_MAPPING_EDITOR.md) for the operator flow and verification.
 
 Editor extension verification (19 October 2026): 44 focused unit tests, compiled-renderer workflow/layout checks and the TypeScript/Vite/NSIS build passed. The general Electron probe stops at the existing hidden suspend-step list in expanded request details; the [projects verification record](CODEX_MOS_PROJECTS.md#extensia-editorului--19-octombrie-2026) records this limitation separately from the passing new-feature checks.
 
-The editor supports section reordering with saved display order and project duplication into an independently named standalone copy. Duplication remaps all internal field/interaction references; order-only saves preserve active buffers and timers. See the projects and [editor contract](CODEX_MOS_MAPPING_EDITOR.md) for the operator flow and verification.
+Editor extension verification (19 October 2026): 44 focused unit tests, compiled-renderer workflow/layout checks and the TypeScript/Vite/NSIS build passed. The general Electron probe stops at the existing hidden suspend-step list in expanded request details; the [projects verification record](CODEX_MOS_PROJECTS.md#extensia-editorului--19-octombrie-2026) records this limitation separately from the passing new-feature checks.
+
+The editor supports section reordering with saved display order and project duplication into an independently named copy that starts in CSV mode. Duplication remaps all internal field/interaction references; order-only saves preserve active buffers and timers. See the projects and [editor contract](CODEX_MOS_MAPPING_EDITOR.md) for the operator flow and verification.
 
 Project-stage verification: 68 focused LB-Portal tests, 11 Plasma contract tests and 110 isolated Electron checks passed; TypeScript/Vite/NSIS build passed. The projects contract records the scope and screenshot review.
 
@@ -111,3 +115,4 @@ The current stylesheet directives and PostCSS plugins use Tailwind CSS 3 (`@tail
 - Create one clear commit at the end of the module.
 - Push the completed module changes to GitHub.
 - Keep commit messages specific to the module outcome.
+În OnAir, proiectele `plasma.test` afișează un mesaj de control din Plasma în locul solicitării directorului PA CSV. Proiectele CSV păstrează mesajul de configurare a directorului.

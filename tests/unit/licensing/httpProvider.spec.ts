@@ -92,7 +92,7 @@ describe('http licensing provider policy mapping', () => {
 
     const result = await provider.validate({
       key: 'license-key',
-      lastValidatedAt: '2026-03-26T12:00:00.000Z',
+      lastValidatedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
       device: {
         machineId: 'machine-1',
         installationId: 'install-1',

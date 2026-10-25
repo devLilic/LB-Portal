@@ -5,8 +5,11 @@ import type { MosMappingConfig } from '../../../src/shared/settings/mosMappings'
 const config: MosMappingConfig = { version: 1, sections: [{ id: 's1', name: 'Headlines', targets: [{ id: 't1', template: 'LB-1' }, { id: 't2', template: 'LB-2' }], resumePlayDelayMs: 150, sources: [{ id: 'src', template: 'Plasma', exitMode: 'template-duration', durationSeconds: 7, fields: [{ id: 'f1', param: 'Title', targetFields: { t1: 'TextA', t2: 'TextB' } }, { id: 'f2', param: 'Sub', targetFields: { t1: 'SubA', t2: 'SubB' } }] }] }] }
 
 describe('resolveMosMapping', () => {
+  it('does not select or fall back to a project when the configuration is empty', () => {
+    expect(resolveMosMapping({template:'Plasma',params:{Title:'x'}},{version:2,activeProjectId:'',projects:[]})).toEqual({status:'unmapped',template:'Plasma'})
+  })
   it('resolves each buffer field and keeps distinct received values', () => {
-    expect(resolveMosMapping({ template: 'Plasma', params: { Title: 'Main', Sub: 'Second' } }, config)).toEqual({ status: 'matched', template: 'Plasma',project:{id:'builtin-telejurnal',name:'Telejurnal',kind:'telejurnal'}, section: { id: 's1', name: 'Headlines' }, targets: [{ id: 't1', template: 'LB-1', fields: [{ param: 'Title', fields: ['TextA'], value: 'Main' }, { param: 'Sub', fields: ['SubA'], value: 'Second' }] }, { id: 't2', template: 'LB-2', fields: [{ param: 'Title', fields: ['TextB'], value: 'Main' }, { param: 'Sub', fields: ['SubB'], value: 'Second' }] }], exitMode: 'template-duration', durationSeconds: 7, resumePlayDelayMs: 150, dataPropagationDelayMs:250, missingParams: [], unmappedParams: [] })
+    expect(resolveMosMapping({ template: 'Plasma', params: { Title: 'Main', Sub: 'Second' } }, config)).toEqual({ status: 'matched', template: 'Plasma',project:{id:'migrated-legacy-project',name:'Proiect migrat',kind:'standalone',mode:'plasma'}, section: { id: 's1', name: 'Headlines' }, targets: [{ id: 't1', template: 'LB-1', fields: [{ param: 'Title', fields: ['TextA'], value: 'Main' }, { param: 'Sub', fields: ['SubA'], value: 'Second' }] }, { id: 't2', template: 'LB-2', fields: [{ param: 'Title', fields: ['TextB'], value: 'Main' }, { param: 'Sub', fields: ['SubB'], value: 'Second' }] }], exitMode: 'template-duration', durationSeconds: 7, resumePlayDelayMs: 150, dataPropagationDelayMs:250, missingParams: [], unmappedParams: [] })
   })
   it('reports missing and extra params, including empty values as present', () => {
     const result = resolveMosMapping({ template: 'Plasma', params: { Title: '', Extra: 'x' } }, config)
@@ -52,18 +55,23 @@ describe('resolveMosMapping', () => {
   it('matches graphic-only templates and distinguishes unmapped and invalid requests', () => {
     const graphic: MosMappingConfig = { ...config, sections: [{ ...config.sections[0]!, sources: [{ ...config.sections[0]!.sources[0]!, template: 'Graphic', fields: [] }] }] }
     expect(resolveMosMapping({ template: 'Graphic' }, graphic).status).toBe('matched')
-    const project={id:'builtin-telejurnal',name:'Telejurnal',kind:'telejurnal'}
+    const project={id:'migrated-legacy-project',name:'Proiect migrat',kind:'standalone',mode:'plasma'}
     expect(resolveMosMapping({ template: 'Other' }, config)).toEqual({ status: 'unmapped', template: 'Other',project })
     expect(resolveMosMapping({ template: 'Plasma', params: { Title: 3 } }, config)).toEqual({ status: 'invalid-request', template: 'Plasma',project })
     expect(resolveMosMapping({ template: '  ' }, config)).toEqual({ status: 'invalid-request', template: '  ',project })
   })
   it('blocks Plasma mapping while a standalone project is active',()=>{
     const standalone={version:2 as const,activeProjectId:'standalone-1',projects:[{id:'builtin-telejurnal',name:'Telejurnal',kind:'telejurnal' as const,mappings:config},{id:'builtin-retrospectiva',name:'Retrospectiva săptămânii',kind:'retrospectiva' as const,mappings:{version:1 as const,sections:[]}},{id:'standalone-1',name:'Direct LiveBoard',kind:'standalone' as const,mappings:{version:1 as const,sections:[]}}]}
-    expect(resolveMosMapping({template:'Plasma'},standalone)).toEqual({status:'project-disabled',template:'Plasma',project:{id:'standalone-1',name:'Direct LiveBoard',kind:'standalone'}})
+    expect(resolveMosMapping({template:'Plasma'},standalone)).toEqual({status:'project-disabled',template:'Plasma',project:{id:'standalone-1',name:'Direct LiveBoard',kind:'standalone',mode:'csv'}})
+  })
+  it('routes plasma.test into a custom Plasma-mode project while retaining manual project activation',()=>{
+    const plasmaProject={id:'retrospectiva-extra',name:'O retrospectivă',kind:'standalone' as const,mode:'plasma' as const,mappings:config}
+    const projects={version:2 as const,activeProjectId:plasmaProject.id,projects:[{id:'builtin-telejurnal',name:'Telejurnal',kind:'telejurnal' as const,mappings:config},{id:'builtin-retrospectiva',name:'Retrospectiva săptămânii',kind:'retrospectiva' as const,mappings:{version:1 as const,sections:[]}},plasmaProject]}
+    expect(resolveMosMapping({template:'Plasma',params:{Title:'Test',Sub:'Text'}},projects)).toMatchObject({status:'matched',project:{id:plasmaProject.id,mode:'plasma'},template:'Plasma'})
   })
   it('captures the active built-in project for unknown and invalid requests',()=>{
     const projects={version:2 as const,activeProjectId:'builtin-retrospectiva',projects:[{id:'builtin-telejurnal',name:'Telejurnal',kind:'telejurnal' as const,mappings:config},{id:'builtin-retrospectiva',name:'Retrospectiva săptămânii',kind:'retrospectiva' as const,mappings:{version:1 as const,sections:[]}}]}
-    expect(resolveMosMapping({template:'Unknown'},projects)).toEqual({status:'unmapped',template:'Unknown',project:{id:'builtin-retrospectiva',name:'Retrospectiva săptămânii',kind:'retrospectiva'}})
-    expect(resolveMosMapping({template:'Known',params:{Title:1}},projects)).toEqual({status:'invalid-request',template:'Known',project:{id:'builtin-retrospectiva',name:'Retrospectiva săptămânii',kind:'retrospectiva'}})
+    expect(resolveMosMapping({template:'Unknown'},projects)).toEqual({status:'unmapped',template:'Unknown',project:{id:'builtin-retrospectiva',name:'Retrospectiva săptămânii',kind:'standalone',mode:'plasma'}})
+    expect(resolveMosMapping({template:'Known',params:{Title:1}},projects)).toEqual({status:'invalid-request',template:'Known',project:{id:'builtin-retrospectiva',name:'Retrospectiva săptămânii',kind:'standalone',mode:'plasma'}})
   })
 })

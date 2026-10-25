@@ -111,12 +111,16 @@ export interface OnAirPlaybackResult {
   execution: LiveBoardExecutionReport
 }
 
+export interface StaticProjectGraphicPlaybackRequest { projectId: string; graphicId: string; action: 'play' | 'resume' }
+export interface StaticProjectGraphicPlaybackResult { graphicId: string; execution: LiveBoardExecutionReport }
+
 export interface OnAirApi {
   listProjects(): Promise<OnAirProjectSummary[]>
   chooseFolder(): Promise<string | null>
   getSnapshot(projectId: string): Promise<OnAirState>
   refresh(projectId: string): Promise<OnAirState>
   playItem(request: OnAirPlaybackRequest): Promise<OnAirPlaybackResult>
+  playProjectGraphic(request: StaticProjectGraphicPlaybackRequest): Promise<StaticProjectGraphicPlaybackResult>
 }
 
 export const onAirInvokeChannels = {
@@ -125,4 +129,5 @@ export const onAirInvokeChannels = {
   getSnapshot: 'onair:get-snapshot',
   refresh: 'onair:refresh',
   playItem: 'onair:play-item',
+  playProjectGraphic: 'onair:play-project-graphic',
 } as const

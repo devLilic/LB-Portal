@@ -7,7 +7,7 @@ import {
   validateOnAirMappings,
   type OnAirGraphicMapping,
 } from '../../../src/shared/onair/mappings'
-import { duplicateMosProject, normalizeMosProjects, validateMosProjects, builtinTelejurnalProjectId } from '../../../src/shared/settings/mosProjects'
+import { duplicateMosProject, normalizeMosProjects, validateMosProjects } from '../../../src/shared/settings/mosProjects'
 import type { MosMappingConfig } from '../../../src/shared/settings/mosMappings'
 
 const mosMappings: MosMappingConfig = {
@@ -32,7 +32,7 @@ const mapping: OnAirGraphicMapping = {
 
 function project(onAirMappings: OnAirGraphicMapping[] = [mapping]) {
   const config = normalizeMosProjects(mosMappings)
-  const base = config.projects.find(candidate => candidate.id === builtinTelejurnalProjectId)!
+  const base = config.projects.find(candidate => candidate.id === config.activeProjectId)!
   return { ...base, onAirMappings }
 }
 
@@ -181,7 +181,7 @@ describe('OnAir graphic mapping resolution and project persistence', () => {
 
   it('persists optional project mappings and duplicates mapping, field, section, and target references independently', () => {
     const config = normalizeMosProjects(mosMappings)
-    const source = { ...config.projects.find(candidate => candidate.id === builtinTelejurnalProjectId)!, onAirMappings: [mapping] }
+    const source = { ...config.projects.find(candidate => candidate.id === config.activeProjectId)!, onAirMappings: [mapping] }
     const projects = validateMosProjects({ ...config, projects: config.projects.map(candidate => candidate.id === source.id ? source : candidate) })
     expect(projects.projects.find(candidate => candidate.id === source.id)?.onAirMappings).toEqual([{ ...mapping, exitMode: 'manual-resume', durationSeconds: 6 }])
 
@@ -201,7 +201,7 @@ describe('OnAir graphic mapping resolution and project persistence', () => {
   it('validates, trims, persists and independently duplicates per-project defaults', () => {
     const config = normalizeMosProjects(mosMappings)
     const source = {
-      ...config.projects.find(candidate => candidate.id === builtinTelejurnalProjectId)!,
+      ...config.projects.find(candidate => candidate.id === config.activeProjectId)!,
       onAirDefaultTemplates: { locations: '  LOC_DEFAULT  ', phones: ' PHONE_DEFAULT ' },
     }
     const configured = validateMosProjects({

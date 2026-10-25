@@ -2,23 +2,26 @@
 
 ## Scop
 
-Secțiunile sunt organizate în proiecte independente. Numai **Telejurnal** și **Retrospectiva săptămânii** primesc PLAY din Plasma. Celelalte emisiuni sunt proiecte pentru operare directă în LB-Portal și pot fi activate și operate din OnAir; cererile Plasma rămân blocate pentru aceste proiecte.
+Secțiunile sunt organizate în proiecte independente, create și administrate de operator. Instalarea nouă începe fără proiecte; numele emisiunilor, mapările și interacțiunile sunt create de la zero. Pentru fiecare proiect, operatorul alege în Setări modul **Fișiere CSV** sau **plasma.test**. Modul se salvează per proiect și determină dacă proiectul activ acceptă cereri Plasma ori folosește fluxul CSV local din OnAir.
 
-Operatorul alege și activează manual proiectul din selectorul unic al tabului OnAir din LB-Portal. Selectorul alege și sursa CSV pentru OnAir; simpla schimbare a selecției nu activează proiectul. Cererile Plasma nu indică un proiect și nu aleg automat altul. Dacă proiectul activ este unul pentru operare directă, cererea HTTP se înregistrează, însă execuția este blocată, fără setări de câmpuri sau comenzi LiveBoard. Nu există fallback la Telejurnal.
+Operatorul alege și activează manual proiectul din selectorul unic al tabului OnAir din LB-Portal. Selectorul alege și sursa CSV pentru OnAir; simpla schimbare a selecției nu activează proiectul. Cererile Plasma nu indică un proiect și nu aleg automat altul. Dacă proiectul activ folosește CSV, cererea HTTP se înregistrează, însă execuția este blocată, fără setări de câmpuri sau comenzi LiveBoard. Nu există fallback la Telejurnal.
 
 ## Proiecte incluse și proiecte noi
 
-- Telejurnal și Retrospectiva sunt proiecte incluse, cu identificatori și roluri stabile. Sunt păstrate la salvare și nu pot fi transformate în proiecte ale altor emisiuni prin modificarea numelui sau rolului.
-- Operatorul poate crea, redenumi și șterge proiecte suplimentare pentru operare directă.
+- Nu există proiecte incluse sau obligatorii. Operatorul poate crea, redenumi și șterge orice proiect; la ștergerea proiectului activ, selecția activă devine goală și alt proiect poate fi activat explicit ulterior din OnAir.
+- Proiectele noi pornesc în modul CSV și pot fi configurate pentru `plasma.test` din selectorul „Mod de lucru”. Fără proiect activ, cererile Plasma sunt înregistrate ca recepționate, dar nu sunt mapate și nu trimit comenzi.
+- Proiectul selectat pentru editare nu devine automat activ. Salvarea configurației și activarea din OnAir rămân acțiuni distincte.
+- Butonul **Exportă proiectul** descarcă un fișier JSON `.lbproject.json` cu mapări, interacțiuni și setările proiectului. **Importă proiect** validează fișierul și creează o copie independentă cu identificatori noi; proiectul importat rămâne draft până la salvare. Calea locală CSV este inclusă și poate necesita actualizare pe alt calculator.
+- Fiecare proiect poate avea opțional `staticGraphics`: grafici cu valori și câmpuri destinație fixe, legate de o secțiune LiveBoard. Pot fi folosite pentru logo-uri sau burtiere constante, apar separat în OnAir și nu depind de snapshotul CSV ori de cereri Plasma. Redarea cere activarea proiectului și trece prin controllerul LiveBoard local; valorile și destinațiile sunt recitite din setările salvate în main. Elementele se copiază și se exportă/importă odată cu proiectul, cu ID-uri și referințe refăcute.
 - Fiecare proiect are propria listă de secțiuni și destinații. Aceleași nume tehnice de template MOS sau LiveBoard se pot repeta în proiecte diferite; conflictele dintre secțiuni sunt verificate în interiorul proiectului.
-- Secțiunile proiectelor pentru operare directă pot exista fără surse Plasma. Nu se inventează surse sau parametri MOS pentru a salva un asemenea proiect.
+- Secțiunile proiectelor pot exista fără surse Plasma, de exemplu pentru grafici fixe; cererile MOS fără o mapare sursă validă rămân nemapate. Proiectele în modul `plasma.test` folosesc mapările sursă MOS normale unde sunt configurate.
 - Conexiunea LiveBoard rămâne o setare comună aplicației. Proiectele nu pornesc conexiuni TCP separate.
 
 ### Duplicarea și ordinea secțiunilor
 
-În Setări, „Duplică proiectul” copiază proiectul editat într-un proiect independent și selectează copia pentru editare. Numele inițial indică sursa și poate fi schimbat în câmpul „Numele proiectului”. Pot fi duplicate atât proiectele incluse, cât și proiectele independente; copia are rolul `standalone`. Telejurnal și Retrospectiva își păstrează identitatea și rolul Plasma.
+În Setări, „Duplică proiectul” copiază proiectul editat într-un proiect independent și selectează copia pentru editare. Numele inițial indică sursa și poate fi schimbat în câmpul „Numele proiectului”. Toate proiectele au rolul `standalone` și pot fi duplicate.
 
-Copia păstrează ordinea secțiunilor, destinațiile, sursele, mapările de câmpuri, timpii și regulile de interacțiune. Toți identificatorii interni sunt noi, iar referințele regulilor și cheile mapărilor de câmpuri sunt refăcute către elementele copiate. Editarea copiei nu modifică originalul. Duplicarea și redenumirea sunt modificări de draft, salvate prin „Salvează setările”; proiectul activ nu se schimbă.
+Copia păstrează ordinea secțiunilor, destinațiile, sursele, mapările de câmpuri, timpii și regulile de interacțiune, dar pornește în modul CSV; modul poate fi schimbat în `plasma.test`. Toți identificatorii interni sunt noi, iar referințele regulilor și cheile mapărilor de câmpuri sunt refăcute către elementele copiate. Editarea copiei nu modifică originalul. Duplicarea și redenumirea sunt modificări de draft, salvate prin „Salvează setările”; proiectul activ nu se schimbă.
 
 Butoanele ↑ și ↓ din lista secțiunilor mută secțiunea cu o poziție. Se păstrează selecția și identificatorii, inclusiv referințele din interacțiuni. După salvare, ordinea este folosită în editor și consolă și se păstrează după repornire. Schimbarea exclusivă a ordinii secțiunilor este o modificare de afișare: păstrează stările, bufferele și temporizările active și nu trimite comenzi LiveBoard. Modificările funcționale și operațiile în curs păstrează protecțiile existente.
 
@@ -38,13 +41,15 @@ După o schimbare permisă, controllerul pornește starea noului proiect de la O
 
 Proiectele pot include opțional `onAirCsv: { format: 'pa-csv', folderPath: string }`, conform [contractului OnAir CSV](CODEX_ONAIR_CSV.md). Sursa se salvează în proiect și se păstrează la redenumire, duplicare și actualizarea mapărilor prin adaptorul legacy. Versiunea configurației rămâne 2; proiectele fără sursă rămân valide. Datele importate sunt separate după ID și trăiesc numai în memoria sesiunii. Selectorul OnAir alege proiectul CSV, iar schimbarea lui activează runtime-ul numai la acționarea explicită a butonului dedicat.
 
-Proprietatea opțională `onAirMappings` leagă tipurile și template-urile CSV de secțiunile, targeturile și câmpurile LiveBoard. Configurația se validează și se salvează în proiect; duplicarea remapează ID-urile și referințele, iar adaptorul v1 o păstrează. Aceste mapări de date sunt independente de sursele MOS și nu constituie o execuție LiveBoard.
+Proprietatea opțională `onAirMappings` leagă tipurile și template-urile CSV de secțiunile, targeturile și câmpurile LiveBoard. Fila de editare **Mapări CSV OnAir** este vizibilă numai când modul proiectului este **Fișiere CSV**. Configurația se validează și se salvează în proiect; duplicarea remapează ID-urile și referințele, iar adaptorul v1 o păstrează. Aceste mapări de date sunt independente de sursele MOS și nu constituie o execuție LiveBoard.
+
+Proprietatea opțională `staticGraphics` definește elemente fixe proiectului: nume afișat, secțiune LiveBoard, durată/ieșire și câmpuri cu etichetă, valoare fixă și una sau mai multe destinații pentru fiecare template A/B. De exemplu, eticheta `Nume`, valoarea `Irina Bejenaru` și destinațiile `Nume` și `Nume_M`; pentru `Funcție` se configurează un rând separat. Lista de câmpuri poate fi goală pentru template-uri grafice care nu cer valori suplimentare. Editorul nu adaugă elemente predefinite. OnAir le afișează fără a cere fișiere CSV și le lansează prin API local tipizat; main verifică proiectul activ și preia definiția salvată înainte de a apela controllerul. Contractul HTTP Plasma nu este schimbat.
 
 `onAirDefaultTemplates` configurează opțional câte un nume pentru locații și intervenții telefonice fără template în CSV. Valorile CSV au prioritate. Configurația se păstrează la scrierile legacy și se copiază independent la duplicare, fără schimbarea snapshotului sau a runtime-ului.
 
-Setarea locală `mosMappings` are configurația canonică versionată `2`: `activeProjectId` și lista `projects`. Fiecare proiect conține `id`, `name`, `kind` și propriul obiect `mappings`, cu structura existentă de secțiuni versionată `1`.
+Setarea locală `mosMappings` are configurația canonică versionată `2`: `activeProjectId` și lista `projects`; ambele pot fi goale când nu este activ niciun proiect. Fiecare proiect conține `id`, `name`, `kind`, `mode` (`plasma` sau `csv`) și propriul obiect `mappings`, cu structura existentă de secțiuni versionată `1`. Pentru datele v2 mai vechi, proiectele Telejurnal/Retrospectiva sunt convertite în proiecte `standalone` editabile în modul Plasma, iar proiectele standalone fără mod salvat primesc modul CSV.
 
-Citirea unei configurații vechi, plate, o adaptează în memorie: toate secțiunile și identificatorii lor devin mapările proiectului Telejurnal; Retrospectiva este goală. Numele tehnice, câmpurile, valorile și timpii nu sunt rescriși. Configurația în formatul nou este păstrată la salvare. Un fișier corupt nu este înlocuit prin presupunerea unei configurații goale.
+Citirea unei configurații vechi, plate, o adaptează în memorie într-un proiect obișnuit editabil, în modul `plasma`; secțiunile și identificatorii existenți sunt păstrați. Configurațiile v2 mai vechi convertesc proiectele Telejurnal și Retrospectiva în proiecte obișnuite, cu datele și rolul Plasma păstrate. Ele pot fi redenumite sau șterse. Configurația în formatul nou este păstrată la salvare. Un fișier corupt nu este înlocuit prin presupunerea unei configurații goale.
 
 API-urile vechi pentru mapări plate rămân adaptoare pentru proiectul activ. Salvarea unei asemenea mapări nu elimină proiectele vecine. Editorul de proiecte folosește API-ul pentru întreaga configurație. Validarea și accesul la fișier rămân în main; rendererul folosește numai preload-ul.
 
@@ -58,12 +63,14 @@ Separarea rezultatelor rămâne valabilă: HTTP 200 confirmă recepția, raportu
 
 ### Etapele și instrumentele implementate
 
+Actualizare 24 octombrie 2026: nu mai există proiecte incluse obligatorii. Instalările noi pornesc cu zero proiecte; proiectele vechi Telejurnal/Retrospectiva rămân date migrabile și devin proiecte obișnuite editabile. Proiectele se pot exporta/importa prin fișiere `.lbproject.json`, cu validare și ID-uri noi la import. Lipsa proiectului activ blochează maparea fără a afecta confirmarea recepției HTTP Plasma. Contractul HTTP, autentificarea, CORS și ruta TCP LiveBoard nu se schimbă.
+
 | Etapă | Instrument / fișier | Rol |
 | --- | --- | --- |
 | Model și migrare | `src/shared/settings/mosProjects.ts` | Configurație v2, proiecte incluse, adaptare v1 și validare per proiect. |
 | Persistență și API | `settingsStore.ts`, `settingsApi.ts`, `liveboard:set-active-project` | Citire/salvare în main, adaptoare compatibile și activare din configurația salvată curentă. |
-| Execuție și diagnostic | `controller.ts`, `mosMappingResolution.ts` | Stare A/B a proiectului activ, protecții la schimbare, blocarea Plasma pentru proiecte directe și identitate capturată. |
-| Editor și consolă | `MosMappingsSettings.tsx`, `LiveBoardConsole.tsx` | Proiect editat separat de proiect activ, proiecte directe cu secțiuni proprii, mesaje RO/EN/RU. |
+| Execuție și diagnostic | `controller.ts`, `mosMappingResolution.ts` | Stare A/B a proiectului activ, protecții la schimbare, blocarea Plasma pentru proiecte CSV și identitate capturată. |
+| Editor și consolă | `MosMappingsSettings.tsx`, `LiveBoardConsole.tsx` | Proiect editat separat de proiect activ, selectarea modului CSV/Plasma pentru proiecte noi, mesaje RO/EN/RU. |
 | Verificare | `mosProjects.spec.ts`, testele controllerului/ingress și `scripts/qa-liveboard.cjs` | Migrare, izolare, persistență, controale Electron și receiver TCP mock fără modificarea setărilor operatorului. |
 
 Codul acestei etape este realizat cu agenții specialiști GPT-6-Luna; integrarea, revizia capturilor și documentația sunt gestionate în chatul principal. Nu se creează o aplicație Electron separată pentru simulator: instrumentul TCP rămâne procesul Node documentat în `LIVEBOARD_MOCK_SERVER.md`.
@@ -87,4 +94,17 @@ Codul acestei etape este realizat cu agenții specialiști GPT-6-Luna; integrare
 
 Verificările folosesc setări temporare și receiverul TCP mock. Nu confirmă grafica video, animațiile sau diacriticele pe o instalație LiveBoard reală. Modificările existente necomise sunt păstrate.
 
-Păstrează sincronizate acest document, contractul de ingress, editorul, execuția, indexul workflow și documentația/indexul Plasma. Verifică migrarea, izolarea mapărilor, selecția manuală, interdicția Plasma pentru proiecte directe, protecția la schimbare, persistența după restart și lipsa comenzilor la activare. Folosește teste unitare, build și instanța Electron izolată cu receiverul TCP mock; compatibilitatea LiveBoard reală cere verificare separată.
+Păstrează sincronizate acest document, contractul de ingress, editorul, execuția, indexul workflow și documentația/indexul Plasma. Verifică migrarea, izolarea mapărilor, selecția manuală, blocarea Plasma pentru proiecte CSV, rutarea proiectelor Plasma personalizate, protecția la schimbare, persistența după restart și lipsa comenzilor la activare. Folosește teste unitare, build și instanța Electron izolată cu receiverul TCP mock; compatibilitatea LiveBoard reală cere verificare separată.
+
+### Moduri de proiect și mapare pe rânduri — 24 octombrie 2026
+
+- Proiectele personalizate au `mode: "csv" | "plasma"`; noile proiecte și copiile pornesc în CSV. Datele v2 deja salvate se normalizează la Plasma pentru proiectele incluse și CSV pentru proiectele `standalone`.
+- Receiverul folosește în continuare exclusiv proiectul activ. Modul Plasma permite o emisiune personalizată cu mapări MOS; modul CSV păstrează recepția HTTP, dar blochează execuția înaintea oricărei comenzi LiveBoard. Envelope-ul, autentificarea, CORS și protocolul LBC nu s-au schimbat.
+- Editorul MOS afișează un singur câmp destinație per rând. Parametrul Plasma poate fi repetat pentru câmpuri precum `Titlu` și `Titlu_M`; valorile se rezolvă la aceeași valoare recepționată. Setările istorice cu liste multiple sunt afișate ca rânduri separate.
+- **45 teste focalizate: PASS** pentru proiecte, rezolvare ingress, controller, snapshot și raport. **Build TypeScript/Vite/NSIS x64: PASS**, inclusiv installerul local `release/0.1.0/LB-Portal-0.1.0-x64.exe`. Verificarea folosește simulare/TCP mock; nu confirmă output video pe LiveBoard real.
+
+### Grafici fixe opționale — 24 octombrie 2026
+
+Elementele `staticGraphics` sunt opționale și nu se creează automat la proiect nou. Pot rula doar template-ul sau pot seta valori fixe pe una ori mai multe destinații din secțiunea legată. Câmpurile destinație se introduc în textarea, câte unul pe linie, iar valoarea fixă se transmite fiecăruia. Duplicarea și transferul `.lbproject.json` păstrează definiția cu identificatori refăcuți. OnAir le afișează și fără CSV, iar PLAY/Resume local folosește controllerul după validarea în main a proiectului activ. Plasma și HTTP receiverul nu primesc modificări de payload sau rutare.
+
+Verificare: `npx tsc --noEmit` și cele 14 teste din `tests/unit/settings/mosProjects.spec.ts` au trecut; output-ul video pe un LiveBoard fizic nu a fost verificat.

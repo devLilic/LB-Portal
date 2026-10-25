@@ -6,11 +6,13 @@ import { createSettingsStore } from '../../../electron/main/modules/settings/set
 import { createOnAirCsvService } from '../../../electron/main/onair/onAirCsvService'
 import { assembleOnAirGroups, OnAirCsvError, parseOnAirCsvFile } from '../../../electron/main/onair/parseOnAirCsv'
 import type { OnAirCsvFileName } from '../../../electron/main/onair/parseOnAirCsv'
-import { defaultMosProjects, type MosProjectsConfig } from '../../../src/shared/settings/mosProjects'
+import type { MosProjectsConfig } from '../../../src/shared/settings/mosProjects'
 
 const tempDirs: string[] = []
 const services: ReturnType<typeof createOnAirCsvService>[] = []
 const names: OnAirCsvFileName[] = ['PA_titles.csv', 'PA_persons.csv', 'PA_locations.csv', 'PA_phones.csv']
+const telejurnalProjectId = 'test-telejurnal-csv'
+const retrospectivaProjectId = 'test-retrospectiva-csv'
 
 afterEach(() => {
   while (services.length) services.pop()!.dispose()
@@ -42,9 +44,14 @@ function fixture() {
     'PA_locations.csv': 'Locatie\n',
     'PA_phones.csv': 'Nume;Functie;Image\n',
   })
-  let config = defaultMosProjects()
-  config = configureFolder(config, 'builtin-telejurnal', folder)
-  config = configureFolder(config, 'builtin-retrospectiva', otherFolder)
+  const config: MosProjectsConfig = {
+    version: 2,
+    activeProjectId: telejurnalProjectId,
+    projects: [
+      { id: telejurnalProjectId, name: 'Telejurnal test', kind: 'standalone', mode: 'csv', mappings: { version: 1, sections: [] }, onAirCsv: { format: 'pa-csv', folderPath: folder } },
+      { id: retrospectivaProjectId, name: 'Retrospectiva test', kind: 'standalone', mode: 'csv', mappings: { version: 1, sections: [] }, onAirCsv: { format: 'pa-csv', folderPath: otherFolder } },
+    ],
+  }
   store.setSetting('mosMappings', config)
   return { root, settingsDir, folder, otherFolder, store }
 }
@@ -118,17 +125,17 @@ describe('OnAir PA CSV service', () => {
   it('isolates project snapshots and keeps the last good snapshot after a bad refresh', async () => {
     const { folder, store } = fixture()
     const service = makeService(path.join(path.dirname(folder), 'settings'), store)
-    const first = await service.refresh('builtin-telejurnal')
-    const second = await service.refresh('builtin-retrospectiva')
+    const first = await service.refresh(telejurnalProjectId)
+    const second = await service.refresh(retrospectivaProjectId)
     expect(first.snapshot?.groups[0]?.titles[0]?.title).toBe('Titlu A')
     expect(second.snapshot?.groups[0]?.titles[0]?.title).toBe('Alt')
-    expect(service.getSnapshot('builtin-telejurnal').snapshot?.projectId).toBe('builtin-telejurnal')
+    expect(service.getSnapshot(telejurnalProjectId).snapshot?.projectId).toBe(telejurnalProjectId)
 
     writeFileSync(path.join(folder, 'PA_titles.csv'), 'bad;header\n', 'utf8')
-    const failed = await service.refresh('builtin-telejurnal')
+    const failed = await service.refresh(telejurnalProjectId)
     expect(failed.error?.code).toBe('INVALID_CSV')
     expect(failed.snapshot?.groups[0]?.titles[0]?.title).toBe('Titlu A')
-    expect(service.getSnapshot('builtin-retrospectiva').snapshot?.groups[0]?.titles[0]?.title).toBe('Alt')
+    expect(service.getSnapshot(retrospectivaProjectId).snapshot?.groups[0]?.titles[0]?.title).toBe('Alt')
   })
 
   it('reports missing files and configured source changes without reading at startup', async () => {
@@ -137,14 +144,14 @@ describe('OnAir PA CSV service', () => {
     const titlePath = path.join(folder, 'PA_titles.csv')
     const titles = readFileSync(titlePath)
     unlinkSync(titlePath)
-    expect(service.getSnapshot('builtin-telejurnal').snapshot).toBeNull()
-    expect(await service.refresh('builtin-telejurnal')).toMatchObject({ error: { code: 'READ_FAILED', file: 'PA_titles.csv' } })
+    expect(service.getSnapshot(telejurnalProjectId).snapshot).toBeNull()
+    expect(await service.refresh(telejurnalProjectId)).toMatchObject({ error: { code: 'READ_FAILED', file: 'PA_titles.csv' } })
 
     writeFileSync(titlePath, titles)
-    const loaded = await service.refresh('builtin-telejurnal')
+    const loaded = await service.refresh(telejurnalProjectId)
     expect(loaded.snapshot).not.toBeNull()
-    store.setSetting('mosMappings', configureFolder(store.getSetting('mosMappings') as MosProjectsConfig, 'builtin-telejurnal', otherFolder))
-    expect(service.getSnapshot('builtin-telejurnal')).toMatchObject({ snapshot: null, error: { code: 'SOURCE_CHANGED' } })
+    store.setSetting('mosMappings', configureFolder(store.getSetting('mosMappings') as MosProjectsConfig, telejurnalProjectId, otherFolder))
+    expect(service.getSnapshot(telejurnalProjectId)).toMatchObject({ snapshot: null, error: { code: 'SOURCE_CHANGED' } })
   })
 
   it('rejects an A to B to A settings change while the original source is being read', async () => {
@@ -158,13 +165,13 @@ describe('OnAir PA CSV service', () => {
         if (!flipped) {
           flipped = true
           const config = store.getSetting('mosMappings') as MosProjectsConfig
-          store.setSetting('mosMappings', configureFolder(config, 'builtin-telejurnal', otherFolder))
-          store.setSetting('mosMappings', configureFolder(store.getSetting('mosMappings') as MosProjectsConfig, 'builtin-telejurnal', folder))
+          store.setSetting('mosMappings', configureFolder(config, telejurnalProjectId, otherFolder))
+          store.setSetting('mosMappings', configureFolder(store.getSetting('mosMappings') as MosProjectsConfig, telejurnalProjectId, folder))
         }
         return content
       },
     })
-    const result = await service.refresh('builtin-telejurnal')
+    const result = await service.refresh(telejurnalProjectId)
     expect(result.error?.code).toBe('SOURCE_CHANGED')
     expect(result.snapshot).toBeNull()
   })
@@ -184,7 +191,7 @@ describe('OnAir PA CSV service', () => {
         return content
       },
     })
-    const result = await service.refresh('builtin-telejurnal')
+    const result = await service.refresh(telejurnalProjectId)
     expect(result.error).toBeNull()
     expect(result.snapshot?.groups[0]?.titles[0]?.title).toBe('Updated')
   })
@@ -208,9 +215,9 @@ describe('OnAir PA CSV service', () => {
         return readFileSync(filePath)
       },
     })
-    const first = service.refresh('builtin-telejurnal')
+    const first = service.refresh(telejurnalProjectId)
     await started
-    const second = service.refresh('builtin-telejurnal')
+    const second = service.refresh(telejurnalProjectId)
     expect(second).toBe(first)
     releaseRead()
     const [firstResult, secondResult] = await Promise.all([first, second])

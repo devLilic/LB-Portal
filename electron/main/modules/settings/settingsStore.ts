@@ -89,8 +89,7 @@ export function createSettingsStore(storageDir: string): SettingsStore {
 
 function validateMosMappingsInput(value:unknown,current?:MosProjectsConfig):MosMappingConfig|MosProjectsConfig {
   if(isLegacyMosMappings(value)) {
-    const activeKind=current?.projects.find(project=>project.id===current.activeProjectId)?.kind
-    return validateMosMappings(value,{allowEmptySources:activeKind==='standalone'})
+    return validateMosMappings(value,{allowEmptySources:true})
   }
   return validateMosProjects(value)
 }

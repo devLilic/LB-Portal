@@ -67,7 +67,7 @@ STOP-ul de recuperare încearcă toate destinațiile secțiunii. Resincronizarea
 
 ## Istoric, securitate și întreținere
 
-[Proiectele](CODEX_MOS_PROJECTS.md) izolează secțiunile, starea A/B, cache-ul cererilor și jurnalul. Operatorul alege manual proiectul activ. Numai Telejurnal și Retrospectiva săptămânii pot executa cereri Plasma; un proiect pentru operare directă returnează un raport blocat fără comenzi. Activarea altui proiect este permisă numai fără operații în curs/coadă și cu toate secțiunile OFF. Nu există STOP, PLAY sau reconectare automată la activare. Editarea unui proiect inactiv nu resetează starea proiectului activ; istoricul păstrează proiectul capturat.
+[Proiectele](CODEX_MOS_PROJECTS.md) izolează secțiunile, starea A/B, cache-ul cererilor și jurnalul. Instalarea nouă nu are proiect activ; operatorul creează proiecte și alege manual proiectul activ. Orice proiect configurat pentru Plasma poate executa cereri; proiectele CSV sau lipsa proiectului activ blochează execuția fără comenzi. Activarea altui proiect este permisă numai fără operații în curs/coadă și cu toate secțiunile OFF. Nu există STOP, PLAY sau reconectare automată la activare. Editarea unui proiect inactiv nu resetează starea proiectului activ; istoricul păstrează proiectul capturat.
 
 HTTP păstrează autentificarea, CORS și envelope-ul existent. Confirmarea 200 înseamnă recepție; raportul ulterior poate fi blocat sau eșuat. Rendererul primește actualizări tipizate ale istoricului și snapshotului; socketul, configurația și execuția rămân în main. Ștergerea istoricului nu resetează starea graficii și nu retrimite cereri.
 

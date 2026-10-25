@@ -63,14 +63,14 @@ describe('LiveBoard interactions', () => {
       await execute(controller, { requestId: 'source-1', template: 'source-mos' })
       expect((await execute(controller, { requestId: 'title-2', template: 'title-mos', params: { Title: 'Older pending' } })).status).toBe('queued')
       expect((await execute(controller, { requestId: 'title-3', template: 'title-mos', params: { Title: 'Latest pending' } })).status).toBe('queued')
-      expect(controller.snapshot.operations.find(operation => operation.operationId === 'builtin-telejurnal:title-2')?.status).toBe('blocked')
+      expect(controller.snapshot.operations.find(operation => operation.operationId === 'migrated-legacy-project:title-2')?.status).toBe('blocked')
       expect(controller.snapshot.sections.find(section => section.sectionId === 'title')?.pendingTemplate).toBe('title-mos')
       await vi.advanceTimersByTimeAsync(6000)
       await vi.runOnlyPendingTimersAsync()
       const restored = controller.snapshot.sections.find(section => section.sectionId === 'title')!
       expect(restored.state).toBe('ON_SINGLE')
       expect(restored.buffers[0]?.fields).toEqual({ Headline: 'Latest pending' })
-      expect(controller.snapshot.operations.find(operation => operation.operationId === 'builtin-telejurnal:title-3')?.status).toBe('completed')
+      expect(controller.snapshot.operations.find(operation => operation.operationId === 'migrated-legacy-project:title-3')?.status).toBe('completed')
     } finally { controller.dispose() }
   })
 

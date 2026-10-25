@@ -18,6 +18,7 @@ describe('feature toggles', () => {
   it('lists enabled features in a stable, config-defined order', () => {
     const config = loadConfig('production', {
       APP_FEATURE_I18N: 'true',
+      APP_FEATURE_AUTO_UPDATE: 'false',
       APP_FEATURE_DATABASE: 'true',
       APP_FEATURE_LOGGING: 'false',
     })

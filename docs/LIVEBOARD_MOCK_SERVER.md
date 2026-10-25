@@ -26,7 +26,7 @@ Simularea internă din LB-Portal este separată: execută mecanismul local și �
 
 ## Probă A/B
 
-Alege mai întâi în consola LB-Portal proiectul Telejurnal sau Retrospectiva săptămânii. Selectarea proiectului în editorul de mapări nu îl activează. Un proiect pentru operare directă blochează execuția Plasma chiar dacă are destinații cu aceleași nume; receiverul mock nu trebuie să primească vreo comandă de la acea cerere.
+Alege mai întâi în consola LB-Portal un proiect configurat pentru Plasma și activează-l explicit în OnAir. Selectarea proiectului în editorul de mapări nu îl activează. Dacă nu există proiect activ sau proiectul este în modul CSV, cererea este recepționată dar nu trimite comenzi; receiverul mock nu trebuie să primească vreo comandă de la acea cerere.
 
 1. Creează o secțiune cu două destinații și mapări distincte pentru câmpurile lor.
 2. Trimite trei PLAY-uri Plasma cu valori diferite. Urmărește selecția A, B, A.

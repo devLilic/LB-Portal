@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LiveBoardController } from '../../../electron/main/liveboard/controller'
 import { guardLiveBoardSetting } from '../../../electron/main/liveboard/settingsGuard'
-import { defaultMosProjects, builtinTelejurnalProjectId } from '../../../src/shared/settings/mosProjects'
+import { defaultMosProjects } from '../../../src/shared/settings/mosProjects'
 import type { MosMappingConfig } from '../../../src/shared/settings/mosMappings'
 import type { LiveBoardTransport } from '../../../electron/main/liveboard/transport'
 import type { OnAirGraphicMapping } from '../../../src/shared/onair/mappings'
@@ -43,7 +43,7 @@ describe('OnAir source-only project settings', () => {
       await vi.advanceTimersByTimeAsync(1000)
       const projectsWithSource = {
         ...initial,
-        projects: initial.projects.map(project => project.id === builtinTelejurnalProjectId
+        projects: initial.projects.map(project => project.id === initial.activeProjectId
           ? { ...project, onAirCsv: { format: 'pa-csv' as const, folderPath: 'C:\\PA\\Export' } }
           : project),
       }
@@ -89,7 +89,7 @@ describe('OnAir source-only project settings', () => {
       }]
       const projectsWithOnAirMapping = {
         ...initial,
-        projects: initial.projects.map(project => project.id === builtinTelejurnalProjectId
+        projects: initial.projects.map(project => project.id === initial.activeProjectId
           ? { ...project, onAirMappings, onAirDefaultTemplates: { locations: 'PA_Location' } }
           : project),
       }

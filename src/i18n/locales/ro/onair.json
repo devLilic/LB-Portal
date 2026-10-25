@@ -10,6 +10,7 @@
   "folderMissing": "Nu este configurat niciun director",
   "folderMissingTitle": "Alege directorul exportului",
   "folderMissingBody": "Deschide Setări și configurează directorul PA CSV pentru {{project}}.",
+  "plasmaProject": { "title": "Proiect controlat din Plasma", "body": "Proiectul {{project}} folosește modul plasma.test. Controlează și trimite grafica din Plasma; elementele grafice fixe configurate în proiect rămân disponibile aici." },
   "lastLoaded": "Ultima încărcare reușită",
   "loading": "Se încarcă datele…",
   "noSnapshot": "Nu există încă o încărcare reușită",
@@ -58,6 +59,7 @@
     "noFields": "Nu sunt mapate câmpuri pentru această destinație.",
     "settingsUnavailable": "Mapările LiveBoard salvate nu au putut fi încărcate."
   },
+  "staticGraphics": {"title":"Grafici fixe ale proiectului","help":"Elemente salvate în proiect, independente de CSV și Plasma.","values":"Valori fixe"},
   "snapshot": { "title": "Date OnAir curente" },
   "loadProjectsError": {
     "title": "Proiectele nu au putut fi încărcate",

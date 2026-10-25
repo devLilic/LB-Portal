@@ -10,6 +10,7 @@ import {saveSettingFromIpc} from '../modules/settings/settingsSave'
 import {resolveMosMapping} from '../../../src/shared/ingress/mosMappingResolution'
 import {resolveOnAirGraphic} from '../../../src/shared/onair/mappings'
 import type {OnAirPlaybackRequest} from '../../../src/shared/onair/contracts'
+import type {StaticProjectGraphicPlaybackRequest} from '../../../src/shared/onair/contracts'
 import {onAirInvokeChannels} from '../../../src/shared/onair/contracts'
 import {normalizeMosProjects} from '../../../src/shared/settings/mosProjects'
 import type {MosMappingResolution} from '../../../src/shared/ingress/mosMappingResolution'
@@ -47,7 +48,8 @@ export function registerLBPortalIngress(getWindow:()=>BrowserWindow|null){
    validate(event)
    const request=validateOnAirPlaybackRequest(raw)
    const current=normalizeMosProjects(settings.getSetting('mosMappings'))
-   const project=current.projects.find(item=>item.id===current.activeProjectId)!
+   const project=current.projects.find(item=>item.id===current.activeProjectId)
+   if(!project)throw Error('There is no active MOS project.')
    if(request.projectId!==project.id)throw Error('OnAir item belongs to a project that is not active.')
    const resolution=resolveOnAirGraphic(request.kind,request.sourceTemplate,request.values,project)
    if(resolution.status!=='matched')throw Error(`OnAir graphic mapping is ${resolution.status}.`)
@@ -57,7 +59,7 @@ export function registerLBPortalIngress(getWindow:()=>BrowserWindow|null){
    if(!onAirMapping)throw Error('OnAir graphic mapping is unavailable in the active project.')
    const mapping:Extract<MosMappingResolution,{status:'matched'}>={
      status:'matched',template:resolution.sourceTemplate,commandType:request.action==='play'?'mos-play':'mos-resume',
-     project:{id:project.id,name:project.name,kind:project.kind},section:resolution.section,
+     project:{id:project.id,name:project.name,kind:project.kind,mode:project.mode??(project.kind==='standalone'?'csv':'plasma')},section:resolution.section,
      targets:resolution.targets.map(target=>({id:target.id,template:target.template,fields:onAirMapping.fields.flatMap(field=>{const fields=field.targetFields[target.id]??[];return fields.length?[{param:field.id,fields:[...fields],value:target.fields[fields[0]!]??''}]:[]})})),
      exitMode:resolution.exitMode,durationSeconds:resolution.durationSeconds,
      resumePlayDelayMs:section.resumePlayDelayMs,dataPropagationDelayMs:section.dataPropagationDelayMs??250,missingParams:[],unmappedParams:[],
@@ -66,6 +68,31 @@ export function registerLBPortalIngress(getWindow:()=>BrowserWindow|null){
      ?await controller.execute({requestId:`onair:${request.itemId}:${Date.now()}`,template:request.sourceTemplate,mapping,allowStandalone:true})
      :await controller.resumeSource(request.sourceTemplate,mapping,true,true)
    return {itemId:request.itemId,kind:request.kind,sourceTemplate:resolution.sourceTemplate,execution:report}
+ })
+ ipcMain.handle(onAirInvokeChannels.playProjectGraphic,async(event,raw:unknown)=>{
+   validate(event)
+   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Invalid static project graphic request.')
+   const request=raw as StaticProjectGraphicPlaybackRequest
+   if(typeof request.projectId!=='string'||!request.projectId||request.projectId.length>200||typeof request.graphicId!=='string'||!request.graphicId||request.graphicId.length>200)throw Error('Invalid static project graphic request.')
+   if(request.action!=='play'&&request.action!=='resume')throw Error('Invalid static project graphic action.')
+   const current=normalizeMosProjects(settings.getSetting('mosMappings'))
+   const project=current.projects.find(item=>item.id===current.activeProjectId)
+   if(!project)throw Error('There is no active MOS project.')
+   if(request.projectId!==project.id)throw Error('Static graphic belongs to a project that is not active.')
+   const graphic=project.staticGraphics?.find(item=>item.id===request.graphicId)
+   if(!graphic)throw Error('Static graphic is unavailable in the active project.')
+   const section=project.mappings.sections.find(item=>item.id===graphic.sectionId)
+   if(!section)throw Error('Static graphic section is unavailable in the active project.')
+   const template=`static:${graphic.id}`
+   const mapping:Extract<MosMappingResolution,{status:'matched'}>={
+     status:'matched',template,commandType:'mos-play',
+     project:{id:project.id,name:project.name,kind:project.kind,mode:project.mode??(project.kind==='standalone'?'csv':'plasma')},
+     section:{id:section.id,name:section.name},
+     targets:section.targets.map(target=>({id:target.id,template:target.template,fields:graphic.fields.flatMap(field=>{const fields=field.targetFields[target.id]??[];return fields.length?[{param:field.id,fields:[...fields],value:field.value}]:[]})})),
+     exitMode:graphic.exitMode,durationSeconds:graphic.durationSeconds,resumePlayDelayMs:section.resumePlayDelayMs,dataPropagationDelayMs:section.dataPropagationDelayMs??250,missingParams:[],unmappedParams:[],
+   }
+   const execution=request.action==='play'?await controller.execute({requestId:`static:${project.id}:${graphic.id}:${Date.now()}`,template,mapping,allowStandalone:true}):await controller.resumeSource(template,mapping,true,true)
+   return {graphicId:graphic.id,execution}
  })
  app.on('before-quit',()=>{void receiver.close();controller.dispose()});void receiver.start();return receiver
 }

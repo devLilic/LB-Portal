@@ -298,8 +298,9 @@ export default function OnAirPage({selectedProjectId,onSelectedProjectIdChange,c
   </section>,document.body)}
   <section className="onair-page" aria-label={t('nav')}>
   {listError?<section className="onair-empty" role="alert"><h3>{t('loadProjectsError.title')}</h3><p>{t('loadProjectsError.body')}</p></section>:!projects.length&&!loading?<section className="onair-empty"><h3>{t('noProjects')}</h3><p>{t('noProjectsBody')}</p></section>:project&&<>
-   {!folderPath?<section className="onair-empty"><h3>{t('folderMissingTitle')}</h3><p>{t('folderMissingBody',{project:project.name})}</p></section>:null}
-   {error&&!(error.code==='NOT_CONFIGURED'&&!folderPath)&&<section className="onair-error" role="alert"><strong>{t(`errors.${error.code}.title`,{defaultValue:t('errors.generic.title')})}</strong><p>{t(`errors.${error.code}.body`,{defaultValue:t('errors.generic.body')})}</p>{error.file&&<code className="onair-error-file">{error.file}{error.record?` · ${t('record',{record:error.record})}`:''}</code>}{error.detail&&<p className="onair-error-detail">{t('errorDetail')}: {error.detail}</p>}</section>}
+   {mosProject?.staticGraphics?.length? <section className="onair-snapshot onair-static-graphics" aria-label={t('staticGraphics.title')}><header className="onair-group-heading"><div><h2>{t('staticGraphics.title')}</h2><p>{t('staticGraphics.help')}</p></div></header><div className="onair-static-graphics-grid">{mosProject.staticGraphics.map(graphic=><StaticGraphicItem key={graphic.id} graphic={graphic} projectId={mosProject.id} liveBoard={liveBoard} t={t}/>)}</div></section>:null}
+   {mosProject?.mode==='plasma'?<section className="onair-empty"><h3>{t('plasmaProject.title')}</h3><p>{t('plasmaProject.body',{project:project.name})}</p></section>:!folderPath&&!mosProject?.staticGraphics?.length?<section className="onair-empty"><h3>{t('folderMissingTitle')}</h3><p>{t('folderMissingBody',{project:project.name})}</p></section>:null}
+   {mosProject?.mode!=='plasma'&&error&&!(error.code==='NOT_CONFIGURED'&&!folderPath)&&<section className="onair-error" role="alert"><strong>{t(`errors.${error.code}.title`,{defaultValue:t('errors.generic.title')})}</strong><p>{t(`errors.${error.code}.body`,{defaultValue:t('errors.generic.body')})}</p>{error.file&&<code className="onair-error-file">{error.file}{error.record?` · ${t('record',{record:error.record})}`:''}</code>}{error.detail&&<p className="onair-error-detail">{t('errorDetail')}: {error.detail}</p>}</section>}
    {settingsError&&<p className="onair-settings-error" role="status">{t('mappings.settingsUnavailable')}</p>}
    {snapshot&&<section className="onair-snapshot" aria-label={t('snapshot.title')}>
     {tabs.length?<>
@@ -314,6 +315,25 @@ export default function OnAirPage({selectedProjectId,onSelectedProjectIdChange,c
   </>}
   </section>
  </>
+}
+
+function StaticGraphicItem({graphic,projectId,liveBoard,t}:{graphic:NonNullable<MosProject['staticGraphics']>[number];projectId:string;liveBoard:LiveBoardSnapshot|null;t:(key:string,options?:Record<string,unknown>)=>string}){
+ const [sending,setSending]=useState(false)
+ const runtimeSection=liveBoard?.sections.find(item=>item.sectionId===graphic.sectionId)
+ const activeBuffer=runtimeSection?.buffers.find(item=>item.id===runtimeSection.activeTargetId)
+ const destinations=graphic.fields.flatMap(field=>(field.targetFields[runtimeSection?.activeTargetId??'']??[]).map(name=>[name,field.value] as const))
+ const expected=Object.fromEntries(destinations)
+ const sameGraphic=!!activeBuffer?.fields&&runtimeSection?.sourceTemplate===`static:${graphic.id}`&&Object.keys(expected).length===Object.keys(activeBuffer.fields).length&&Object.entries(expected).every(([name,value])=>activeBuffer.fields?.[name]===value)
+ const isOnAir=liveBoard?.activeProject.id===projectId&&!!runtimeSection&&['ON_A','ON_B','ON_SINGLE'].includes(runtimeSection.state)&&sameGraphic
+ const action:'play'|'resume'=isOnAir?'resume':'play'
+ const disableReason=!liveBoard?'runtimeLoading':liveBoard.activeProject.id!==projectId?'wrongProject':!runtimeSection?'unavailable':sending||runtimeSection.busy?'busy':runtimeSection.state==='NEEDS_RESYNC'?'needsResync':action==='resume'&&graphic.exitMode==='template-duration'?'automaticDuration':null
+ const disabled=disableReason!==null
+ const play=async()=>{if(disabled)return;setSending(true);try{await window.onAirApi.playProjectGraphic({projectId,graphicId:graphic.id,action})}catch{}finally{setSending(false)}}
+ const hasValues=graphic.fields.length>0
+ return <article className="onair-static-graphic">
+  <header className="onair-static-graphic-heading"><h3>{graphic.name}</h3><button className={`onair-playback${sending?' is-busy':''}`} type="button" disabled={Boolean(disableReason)} onClick={()=>void play()} aria-label={t(`playback.${action}`)} title={disableReason?t(`playback.${disableReason}`):t(`playback.${action}`)}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{action==='resume'?<><path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M18 3v3h-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="m9.5 8.5 6 3.5-6 3.5z"/></>:<path d="M8 5v14l11-7z"/>}</svg></button></header>
+  {hasValues&&<dl className="onair-static-graphic-values" aria-label={t('staticGraphics.values')}>{graphic.fields.map(field=><div key={field.id}><dt>{field.label}</dt><dd>{field.value||t('emptyValue')}</dd></div>)}</dl>}
+ </article>
 }
 
 function GroupPanel({group,kind,description,t,project,projectId,liveBoard,newItemIds,fadingItemIds,selectedItemId,onNewItemHandled}:{group:OnAirGroup|null;kind:Tab['kind'];description:string;t:(key:string,options?:Record<string,unknown>)=>string;project:MosProject|null;projectId:string|null;liveBoard:LiveBoardSnapshot|null;newItemIds:Set<string>;fadingItemIds:Set<string>;selectedItemId:string|null;onNewItemHandled:(itemId:string)=>void}){

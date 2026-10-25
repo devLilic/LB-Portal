@@ -1,5 +1,5 @@
 import type { LiveBoardConnectionSnapshot } from './connection'
-import type { MosProjectKind } from '../settings/mosProjects'
+import type { MosProjectKind, MosProjectMode } from '../settings/mosProjects'
 import type { LiveBoardSettingsDenialCode } from '../ipc/contracts'
 
 export type LiveBoardSectionState = 'OFF' | 'ON_A' | 'ON_B' | 'ON_SINGLE' | 'SUSPENDED' | 'NEEDS_RESYNC'
@@ -69,7 +69,7 @@ export interface LiveBoardSectionSnapshot {
   pendingRestore?: boolean
   pendingTemplate?: string | null
 }
-export interface LiveBoardProjectSummary { id:string; name:string; kind:MosProjectKind }
+export interface LiveBoardProjectSummary { id:string; name:string; kind:MosProjectKind; mode:MosProjectMode }
 export interface LiveBoardSnapshot { connection: LiveBoardConnectionSnapshot; activeProject:LiveBoardProjectSummary; projects:LiveBoardProjectSummary[]; sections: LiveBoardSectionSnapshot[]; operations: LiveBoardExecutionReport[] }
 export type LiveBoardResyncState = 'OFF' | 'A' | 'B' | 'single'
 export type ProjectActivationResult = {ok:true;value:LiveBoardSnapshot}|{ok:false;error:{code:LiveBoardSettingsDenialCode|'LIVEBOARD_PROJECT_NOT_FOUND';sectionNames:string[]}}

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LiveBoardController } from '../../../electron/main/liveboard/controller'
 import { emptyMosMappingConfig, type MosMappingConfig } from '../../../src/shared/settings/mosMappings'
-import { builtinRetrospectivaProjectId, builtinTelejurnalProjectId, defaultMosProjects } from '../../../src/shared/settings/mosProjects'
+import { defaultMosProjects } from '../../../src/shared/settings/mosProjects'
 import { guardLiveBoardSetting } from '../../../electron/main/liveboard/settingsGuard'
 import { LiveBoardSettingsGuardError } from '../../../electron/main/liveboard/settingsGuard'
 import { resolveMosMapping } from '../../../src/shared/ingress/mosMappingResolution'
@@ -103,14 +103,14 @@ describe('LiveBoard controller',()=>{
   it('plays graphic-only mappings without setters when params are omitted',async()=>{
     const graphic: MosMappingConfig={...mapping,sections:mapping.sections.map(section=>({...section,targets:[section.targets[0]!],sources:[{id:'g',template:'Graphic',exitMode:'manual-resume',durationSeconds:6,fields:[]}]}))}
     const c=new LiveBoardController(connection,graphic)
-    const report=await c.execute({requestId:'graphic',template:'Graphic',mapping:{status:'matched',template:'Graphic',project:{id:'builtin-telejurnal',name:'Telejurnal',kind:'telejurnal'},section:{id:'s',name:'Headlines'},targets:[{id:'a',template:'LB-A',fields:[]}],exitMode:'manual-resume',durationSeconds:6,resumePlayDelayMs:0,dataPropagationDelayMs:0,missingParams:[],unmappedParams:[]}})
+    const report=await c.execute({requestId:'graphic',template:'Graphic',mapping:{status:'matched',template:'Graphic',project:{id:'migrated-legacy-project',name:'Proiect migrat',kind:'standalone',mode:'plasma'},section:{id:'s',name:'Headlines'},targets:[{id:'a',template:'LB-A',fields:[]}],exitMode:'manual-resume',durationSeconds:6,resumePlayDelayMs:0,dataPropagationDelayMs:0,missingParams:[],unmappedParams:[]}})
     expect(report.status).toBe('completed')
     expect(report.steps.map(step=>step.kind)).toEqual(['wait-data','play'])
   })
   it('resumes a Plasma source through its mapped active buffer and confirms OFF',async()=>{
     const durationMapping: MosMappingConfig={...mapping,sections:mapping.sections.map(section=>({...section,sources:section.sources.map(source=>({...source,exitMode:'template-duration' as const}))}))}
     const c=new LiveBoardController(connection,durationMapping)
-    const receipt={status:'matched' as const,template:'MOS',project:{id:builtinTelejurnalProjectId,name:'Telejurnal',kind:'telejurnal' as const},section:{id:'s',name:'Headlines'},targets:[{id:'a',template:'LB-A',fields:[{param:'Title',fields:['Headline'],value:'Title'},{param:'strap',fields:['Strap'],value:'strap'}]},{id:'b',template:'LB-B',fields:[{param:'Title',fields:['Headline'],value:'Title'},{param:'strap',fields:['Strap'],value:'strap'}]}],exitMode:'template-duration' as const,durationSeconds:6,resumePlayDelayMs:0,dataPropagationDelayMs:0,missingParams:[],unmappedParams:[]}
+    const receipt={status:'matched' as const,template:'MOS',project:{id:'migrated-legacy-project',name:'Proiect migrat',kind:'standalone' as const,mode:'plasma' as const},section:{id:'s',name:'Headlines'},targets:[{id:'a',template:'LB-A',fields:[{param:'Title',fields:['Headline'],value:'Title'},{param:'strap',fields:['Strap'],value:'strap'}]},{id:'b',template:'LB-B',fields:[{param:'Title',fields:['Headline'],value:'Title'},{param:'strap',fields:['Strap'],value:'strap'}]}],exitMode:'template-duration' as const,durationSeconds:6,resumePlayDelayMs:0,dataPropagationDelayMs:0,missingParams:[],unmappedParams:[]}
     await c.execute({requestId:'live-title',template:'MOS',params:{Title:'Title',strap:'strap'}})
     expect(c.snapshot.sections[0]!.state).toBe('ON_A')
     const resumed=await c.resumeSource('MOS',receipt)
@@ -140,8 +140,21 @@ describe('LiveBoard controller',()=>{
     expect(report.projectId).toBe(direct.id)
     expect(report.projectKind).toBe('standalone')
     expect(report.steps).toHaveLength(0)
-    expect(c.snapshot.activeProject).toEqual({id:direct.id,name:direct.name,kind:'standalone'})
+    expect(c.snapshot.activeProject).toEqual({id:direct.id,name:direct.name,kind:'standalone',mode:'csv'})
     expect((await c.execute({requestId:'direct-no-map',template:'MOS',params:{Title:'x',strap:'y'}})).status).toBe('blocked')
+  })
+  it('executes Plasma requests for an explicitly Plasma-enabled custom project',async()=>{
+    const projects=defaultMosProjects(mapping)
+    const show={id:'weekly-extra',name:'Retrospectiva specială',kind:'standalone' as const,mode:'plasma' as const,mappings:mapping}
+    const config={...projects,activeProjectId:show.id,projects:[...projects.projects,show]}
+    const c=new LiveBoardController(connection,config)
+    const receipt=resolveMosMapping({type:'mos-play',template:'MOS',params:{Title:'Weekly title',strap:'Weekly sub'}},config)
+    try{
+      const report=await c.execute({requestId:'custom-plasma',template:'MOS',mapping:receipt})
+      expect(report.status).toBe('completed')
+      expect(report.projectId).toBe(show.id)
+      expect(c.snapshot.activeProject).toMatchObject({id:show.id,mode:'plasma'})
+    }finally{c.dispose()}
   })
   it('allows an explicit mapped OnAir PLAY in the active standalone project while keeping ordinary requests blocked',async()=>{
     vi.useFakeTimers()
@@ -196,15 +209,16 @@ describe('LiveBoard controller',()=>{
     const c=new LiveBoardController(connection,projects)
     c.installSettingsGuard()
     await c.execute({requestId:'active',template:'MOS',params:{Title:'v',strap:'s'}})
-    const switched={...projects,activeProjectId:builtinRetrospectivaProjectId}
+    const second={id:'second-project',name:'Second project',kind:'standalone' as const,mode:'plasma' as const,mappings:emptyMosMappingConfig}
+    const switched={...projects,activeProjectId:second.id,projects:[...projects.projects,second]}
     expect(()=>guardLiveBoardSetting('mosMappings',switched)).toThrowError(LiveBoardSettingsGuardError)
     await c.stop('s')
     await new Promise(resolve=>setTimeout(resolve,0))
     guardLiveBoardSetting('mosMappings',switched)
     c.setProjects(switched)
-    expect(c.snapshot.activeProject.id).toBe(builtinRetrospectivaProjectId)
+    expect(c.snapshot.activeProject.id).toBe(second.id)
     expect(c.snapshot.sections).toHaveLength(0)
-    expect(c.snapshot.projects.map(project=>project.id)).toEqual([builtinTelejurnalProjectId,builtinRetrospectivaProjectId])
+    expect(c.snapshot.projects.map(project=>project.id)).toEqual([projects.activeProjectId,second.id])
   })
   it('allows section reordering while graphics are active and preserves runtime timers',async()=>{
     const second={...mapping.sections[0]!,id:'s2',name:'Second headlines',targets:[{id:'c',template:'LB-C'},{id:'d',template:'LB-D'}],sources:[{...mapping.sections[0]!.sources[0]!,id:'src2',template:'MOS-2',exitMode:'template-duration' as const,durationSeconds:6,fields:[{id:'f3',param:'Title',targetFields:{c:'Headline',d:'Headline'}}]}]}
@@ -217,7 +231,7 @@ describe('LiveBoard controller',()=>{
     expect(c.snapshot.sections.find(section=>section.sectionId==='s2')?.state).toBe('ON_A')
     const runtimeState=c as unknown as {runtimes:Map<string,{timerExpiresAt:number|null}>}
     const expiryBefore=runtimeState.runtimes.get('s2')?.timerExpiresAt
-    const reordered={...projects,projects:projects.projects.map(project=>project.id===builtinTelejurnalProjectId?{...project,mappings:{...project.mappings,sections:[...project.mappings.sections].reverse()}}:project)}
+    const reordered={...projects,projects:projects.projects.map(project=>project.id===projects.activeProjectId?{...project,mappings:{...project.mappings,sections:[...project.mappings.sections].reverse()}}:project)}
 
     expect(()=>guardLiveBoardSetting('mosMappings',reordered)).not.toThrow()
     c.setProjects(reordered)
@@ -230,15 +244,15 @@ describe('LiveBoard controller',()=>{
   })
   it('scopes request id deduplication to the captured project',async()=>{
     const projects=defaultMosProjects(mapping)
-    const retrospective={...projects.projects.find(project=>project.id===builtinRetrospectivaProjectId)!,mappings:mapping}
-    const both={...projects,projects:projects.projects.map(project=>project.id===builtinRetrospectivaProjectId?retrospective:project)}
+    const retrospective={id:'second-project',name:'Second project',kind:'standalone' as const,mode:'plasma' as const,mappings:mapping}
+    const both={...projects,projects:[...projects.projects,retrospective]}
     const c=new LiveBoardController(connection,both)
     const request={requestId:'reused',template:'MOS',params:{Title:'same',strap:'same'}}
-    expect((await c.execute(request)).projectId).toBe(builtinTelejurnalProjectId)
+    expect((await c.execute(request)).projectId).toBe(projects.activeProjectId)
     await c.stop('s')
-    c.setProjects({...both,activeProjectId:builtinRetrospectivaProjectId})
+    c.setProjects({...both,activeProjectId:retrospective.id})
     const second=await c.execute(request)
     expect(second.status).toBe('completed')
-    expect(second.projectId).toBe(builtinRetrospectivaProjectId)
+    expect(second.projectId).toBe(retrospective.id)
   })
 })
