@@ -9,6 +9,7 @@
       "folder": "CSV folder",
       "folderPlaceholder": "Absolute folder path",
       "filePrefix": "Filename prefix",
+      "includeWaitTitlesLocations": "Read the optional waiting title and location file",
       "invalidPrefix": "Use only letters, numbers, _ or -, and end the prefix with _.",
       "chooseFolder": "Choose folder",
       "choosing": "Choosing…",
@@ -50,7 +51,7 @@
       "removeField": "Remove field mapping",
       "sectionInUse": "This section is used by an OnAir CSV mapping. Remove or move that mapping first.",
       "targetInUse": "This template is used by an OnAir CSV field mapping. Remove or update that mapping first.",
-      "kinds": {"titles":"Titles","persons":"People","locations":"Locations","phones":"Phones"},
+      "kinds": {"titles":"Titles","persons":"People","locations":"Locations","phones":"Phones","waitTitlesLocations":"Waiting title and location"},
       "fields": {"Titlu":"Title","Supratitlu":"Supertitle","Nume":"Name","Functie":"Role","Locatie":"Location","Image":"Image"},
       "validation": {"invalidStructure":"Invalid OnAir mapping structure.","duplicateId":"Mapping identifiers must be unique.","required":"Choose a value for this mapping.","invalidKind":"Unknown CSV graphic type.","duplicateSource":"This CSV graphic already has a mapping.","invalidSection":"Choose an existing LiveBoard section.","invalidSourceField":"Choose a field from this CSV graphic type.","duplicateSourceField":"Choose two different CSV fields.","invalidSeparator":"The separator must be text.","invalidTarget":"A mapped LiveBoard template no longer exists.","invalidTargetFields":"Enter at least one destination field name.","duplicateTargetField":"A destination field is repeated."}
     },

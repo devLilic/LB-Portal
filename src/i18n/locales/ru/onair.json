@@ -91,7 +91,8 @@
     "titles": "Заголовки",
     "persons": "Люди",
     "locations": "Места",
-    "phones": "Телефонные включения"
+    "phones": "Телефонные включения",
+    "waitTitleLocations": "Заголовок и место ожидания"
   },
   "groupKinds": {
     "beta": "Бета",

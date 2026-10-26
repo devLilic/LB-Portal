@@ -9,6 +9,7 @@
       "folder": "Папка CSV",
       "folderPlaceholder": "Абсолютный путь к папке",
       "filePrefix": "Префикс файлов",
+      "includeWaitTitlesLocations": "Читать необязательный файл заголовка и места ожидания",
       "invalidPrefix": "Используйте только буквы, цифры, _ или - и завершайте префикс символом _.",
       "chooseFolder": "Выбрать папку",
       "choosing": "Выбор…",
@@ -138,7 +139,7 @@
       "removeField": "Удалить связь поля",
       "sectionInUse": "Этот раздел используется связью CSV OnAir. Сначала удалите или переместите эту связь.",
       "targetInUse": "Этот шаблон используется связью поля CSV OnAir. Сначала удалите или измените эту связь.",
-      "kinds": {"titles":"Заголовки","persons":"Люди","locations":"Локации","phones":"Телефоны"},
+      "kinds": {"titles":"Заголовки","persons":"Люди","locations":"Локации","phones":"Телефоны","waitTitlesLocations":"Заголовок и место ожидания"},
       "fields": {"Titlu":"Заголовок","Supratitlu":"Надзаголовок","Nume":"Имя","Functie":"Роль","Locatie":"Место","Image":"Изображение"},
       "validation": {"invalidStructure":"Некорректная структура связи OnAir.","duplicateId":"Идентификаторы связей должны быть уникальными.","required":"Выберите значение для этой связи.","invalidKind":"Неизвестный тип графики CSV.","duplicateSource":"Для этой графики CSV уже есть связь.","invalidSection":"Выберите существующий раздел LiveBoard.","invalidSourceField":"Выберите поле, доступное для этого типа графики.","duplicateSourceField":"Выберите два разных поля CSV.","invalidSeparator":"Разделитель должен быть текстом.","invalidTarget":"Связанный шаблон LiveBoard больше не существует.","invalidTargetFields":"Укажите хотя бы одно поле назначения.","duplicateTargetField":"Поле назначения повторяется."}
     },

@@ -99,7 +99,7 @@ export function registerLBPortalIngress(getWindow:()=>BrowserWindow|null){
 function validateOnAirPlaybackRequest(value:unknown):OnAirPlaybackRequest {
  if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Invalid OnAir playback request.')
  const raw=value as Record<string,unknown>
- if(typeof raw.projectId!=='string'||!raw.projectId||raw.projectId.length>200||typeof raw.itemId!=='string'||!raw.itemId||raw.itemId.length>300||typeof raw.sourceTemplate!=='string'||raw.sourceTemplate.length>500||!['titles','persons','locations','phones'].includes(String(raw.kind))||!['play','resume'].includes(String(raw.action)))throw Error('Invalid OnAir playback request.')
+ if(typeof raw.projectId!=='string'||!raw.projectId||raw.projectId.length>200||typeof raw.itemId!=='string'||!raw.itemId||raw.itemId.length>300||typeof raw.sourceTemplate!=='string'||raw.sourceTemplate.length>500||!['titles','persons','locations','phones','waitTitlesLocations'].includes(String(raw.kind))||!['play','resume'].includes(String(raw.action)))throw Error('Invalid OnAir playback request.')
  if(!raw.values||typeof raw.values!=='object'||Array.isArray(raw.values)||Object.entries(raw.values).length>20||Object.entries(raw.values).some(([key,item])=>!key||key.length>100||typeof item!=='string'||item.length>10000))throw Error('Invalid OnAir playback values.')
  return {projectId:raw.projectId,kind:raw.kind as OnAirPlaybackRequest['kind'],itemId:raw.itemId,sourceTemplate:raw.sourceTemplate,values:raw.values as Record<string,string>,action:raw.action as OnAirPlaybackRequest['action']}
 }

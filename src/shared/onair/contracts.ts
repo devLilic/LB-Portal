@@ -7,6 +7,7 @@ export interface OnAirCsvSource {
   format: 'pa-csv'
   folderPath: string
   filePrefix?: string
+  includeWaitTitlesLocations?: boolean
 }
 
 export interface OnAirProjectSummary {
@@ -45,6 +46,12 @@ export interface OnAirLocation extends OnAirItem {
   template: string
 }
 
+export interface OnAirWaitTitleLocation extends OnAirItem {
+  title: string
+  location: string
+  template: string
+}
+
 export interface OnAirPhone extends OnAirItem {
   name: string
   role: string
@@ -62,6 +69,7 @@ export interface OnAirGroup {
   persons: OnAirPerson[]
   locations: OnAirLocation[]
   phones: OnAirPhone[]
+  waitTitleLocations: OnAirWaitTitleLocation[]
 }
 
 export interface OnAirSnapshot {

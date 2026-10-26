@@ -32,7 +32,14 @@ const snapshot = (project, groupName, loadedAt) => ({
       title: 'Al doilea titlu',
       supratitle: '',
       template: '05_Titlu_Ultima_Ora',
-    }],
+      }, ...Array.from({ length: 18 }, (_, index) => ({
+        id: `${project.id}-long-title-${index + 1}`,
+        source: { file: 'Titles.csv', record: index + 5, line: index + 6 },
+        nr: String(index + 7),
+        title: `Titlu lung QA ${index + 1} pentru verificarea capătului listei`,
+        supratitle: '',
+        template: '05_Titlu_Ultima_Ora',
+      }))],
     persons: [{
       id: `${project.id}-person`,
       source: { file: 'Persons.csv', record: 2, line: 3 },
@@ -45,10 +52,11 @@ const snapshot = (project, groupName, loadedAt) => ({
       { id: `${project.id}-location-csv-template`, source: { file: 'Locations.csv', record: 3, line: 4 }, template: '05_Titlu_Ultima_Ora', location: 'Bălți' },
     ],
     phones: [{ id: `${project.id}-phone`, source: { file: 'Phones.csv', record: 2, line: 3 }, template: '   ', name: 'Intervenție telefonică', role: 'Reporter', imagePath: 'C:\\assets\\phone\\reporter image.png' }],
+    waitTitleLocations: [],
   }, {
     id: `${project.id}-beta`, name: 'Beta 7 - Subiecte ale zilei', kind: 'beta',
     titles: [{ id: `${project.id}-beta-title`, source: { file: 'Titles.csv', record: 5, line: 6 }, nr: '07', title: 'Titlu din grupul Beta', supratitle: '', template: '' }],
-    persons: [], locations: [], phones: [],
+    persons: [], locations: [], phones: [], waitTitleLocations: [],
   }],
 })
 
@@ -203,13 +211,19 @@ async function main() {
   assert.equal(await tabs.nth(1).getAttribute('aria-selected'), 'true', 'End should select the last tab')
   await tabs.nth(0).click()
   const titleItem = page.locator('.onair-item').filter({ hasText: 'Un titlu de test suficient' }).first()
-  assert.equal(await page.locator('.onair-template').count(), 6, 'each item type should display its source template')
+  assert.equal(await page.locator('.onair-template').count(), 24, 'each item type should display its source template')
   const titleOrder = await titleItem.evaluate(element => ({ supertitle: element.querySelector('.onair-supertitle')?.compareDocumentPosition(element.querySelector('.onair-title-copy strong')) }))
   assert.ok((titleOrder.supertitle & 4) !== 0, 'supratitlu should precede the title in the DOM')
   await titleItem.locator('.onair-mapping-preview summary').click()
   assert.equal(await titleItem.locator('.onair-resolved-target > strong').first().innerText(), 'QA_Project_Two_Template', 'mapping previews should use the selected project configuration')
   await titleItem.getByText('F_TEXT', { exact: true }).waitFor()
   assert.match(await titleItem.locator('.onair-resolved-target dd').first().innerText(), /Un titlu de test suficient de lung/)
+  const titleList = page.locator('.onair-titles-block')
+  await titleList.evaluate(element => { element.scrollTop = element.scrollHeight })
+  const finalTitle = page.locator('.onair-titles-block .onair-item').filter({ hasText: 'Titlu lung QA 18' })
+  const finalTitleBounds = await finalTitle.boundingBox()
+  const titleListBounds = await titleList.boundingBox()
+  assert.ok(finalTitleBounds && titleListBounds && finalTitleBounds.y >= titleListBounds.y && finalTitleBounds.y + finalTitleBounds.height <= titleListBounds.y + titleListBounds.height, 'the final long-list title must be fully visible at the bottom of the scroll area')
   const emptyTitleItem = page.locator('.onair-item').filter({ hasText: 'Al doilea titlu' })
   await emptyTitleItem.locator('.onair-mapping-preview summary').click()
   await emptyTitleItem.getByText('F_SUPRA', { exact: true }).waitFor()

@@ -1,6 +1,6 @@
 import type { MosMappingConfig } from '../settings/mosMappings'
 
-export type OnAirGraphicKind = 'titles' | 'persons' | 'locations' | 'phones'
+export type OnAirGraphicKind = 'titles' | 'persons' | 'locations' | 'phones' | 'waitTitlesLocations'
 export type OnAirDefaultTemplates = Partial<Record<'locations' | 'phones', string>>
 
 export interface OnAirGraphicFieldMapping {
@@ -33,6 +33,7 @@ export const onAirSourceFields: Record<OnAirGraphicKind, readonly string[]> = {
   persons: ['Nume', 'Functie'],
   locations: ['Locatie'],
   phones: ['Nume', 'Functie', 'Image'],
+  waitTitlesLocations: ['Titlu', 'Locatie'],
 }
 
 export function getOnAirEffectiveTemplate(
@@ -186,7 +187,7 @@ function addId(value: unknown, path: string, ids: Set<string>, issue: (code: str
 }
 
 function isOnAirGraphicKind(value: unknown): value is OnAirGraphicKind {
-  return value === 'titles' || value === 'persons' || value === 'locations' || value === 'phones'
+  return value === 'titles' || value === 'persons' || value === 'locations' || value === 'phones' || value === 'waitTitlesLocations'
 }
 
 function isRecord(value: unknown): value is Record<string, any> {

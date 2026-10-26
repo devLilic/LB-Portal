@@ -81,7 +81,8 @@
     "titles": "Titles",
     "persons": "Persons",
     "locations": "Locations",
-    "phones": "Phone interventions"
+    "phones": "Phone interventions",
+    "waitTitleLocations": "Waiting title and location"
   },
   "groupKinds": {
     "beta": "Beta",

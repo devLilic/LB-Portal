@@ -86,7 +86,8 @@
     "titles": "Titluri",
     "persons": "Persoane",
     "locations": "Locații",
-    "phones": "Intervenții telefonice"
+    "phones": "Intervenții telefonice",
+    "waitTitleLocations": "Titlu și locație de așteptare"
   },
   "groupKinds": {
     "beta": "Beta",

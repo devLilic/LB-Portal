@@ -354,13 +354,14 @@ function StaticGraphicItem({graphic,projectId,liveBoard,t}:{graphic:NonNullable<
 function GroupPanel({group,kind,description,t,project,projectId,liveBoard,newItemIds,fadingItemIds,selectedItemId,onNewItemHandled}:{group:OnAirGroup|null;kind:Tab['kind'];description:string;t:(key:string,options?:Record<string,unknown>)=>string;project:MosProject|null;projectId:string|null;liveBoard:LiveBoardSnapshot|null;newItemIds:Set<string>;fadingItemIds:Set<string>;selectedItemId:string|null;onNewItemHandled:(itemId:string)=>void}){
  if(!group)return <section className={`onair-group onair-group-${kind}`}><p className="onair-empty-group">{t('groups.invitedEmpty')}</p></section>
  return <article className={`onair-group onair-group-${group.kind}`}>
-  {group.kind!=='invited'&&<header className="onair-group-heading"><div>{group.kind==='beta'?<span className="onair-group-kind">{description||group.name||t('unnamedGroup')}</span>:<><span className="onair-group-kind">{t(`groupKinds.${group.kind}`)}</span><h3>{description||group.name||t('unnamedGroup')}</h3></>}</div><span className="onair-group-total">{group.titles.length+group.persons.length+group.locations.length+group.phones.length}</span></header>}
+  {group.kind!=='invited'&&<header className="onair-group-heading"><div>{group.kind==='beta'?<span className="onair-group-kind">{description||group.name||t('unnamedGroup')}</span>:<><span className="onair-group-kind">{t(`groupKinds.${group.kind}`)}</span><h3>{description||group.name||t('unnamedGroup')}</h3></>}</div><span className="onair-group-total">{group.titles.length+group.persons.length+group.locations.length+group.phones.length+group.waitTitleLocations.length}</span></header>}
   <div className="onair-group-columns">
    <section className="onair-list-block onair-titles-block"><h4>{t('sections.titles')} <small>{group.titles.length}</small></h4>{group.titles.length?group.titles.map(item=><MappedItem key={item.id} itemId={item.id} kind="titles" template={item.template} values={{Titlu:item.title,Supratitlu:item.supratitle}} project={project} projectId={projectId} liveBoard={liveBoard} t={t} isNew={newItemIds.has(item.id)} isFading={fadingItemIds.has(item.id)} selected={selectedItemId===item.id} onNewItemHandled={onNewItemHandled}><div className={`onair-title-copy${item.supratitle?' has-supertitle':''}`}><span className="onair-title-number">{item.nr}</span>{item.supratitle&&<p className="onair-supertitle">{item.supratitle}</p>}<strong>{item.title||t('emptyValue')}</strong></div></MappedItem>):<p className="onair-none">{t('none')}</p>}</section>
    <div className="onair-right-column"><section className="onair-list-block"><h4>{t('sections.persons')} <small>{group.persons.length}</small></h4>{group.persons.length?group.persons.map(item=><MappedItem key={item.id} itemId={item.id} kind="persons" template={item.template} values={{Nume:item.name,Functie:item.role}} project={project} projectId={projectId} liveBoard={liveBoard} t={t} isNew={newItemIds.has(item.id)} isFading={fadingItemIds.has(item.id)} selected={selectedItemId===item.id} onNewItemHandled={onNewItemHandled}><div><strong className="onair-preserved-text">{item.name||t('emptyValue')}</strong>{item.role&&<p className="onair-secondary-text">{item.role}</p>}</div></MappedItem>):<p className="onair-none">{t('none')}</p>}</section>
-  {(group.locations.length>0||group.phones.length>0)&&<div className="onair-group-extra">
+  {(group.locations.length>0||group.phones.length>0||group.waitTitleLocations.length>0)&&<div className="onair-group-extra">
    {group.locations.length>0&&<section className="onair-list-block"><h4>{t('sections.locations')} <small>{group.locations.length}</small></h4>{group.locations.map(item=><MappedItem key={item.id} itemId={item.id} kind="locations" template={item.template} values={{Locatie:item.location}} project={project} projectId={projectId} liveBoard={liveBoard} t={t} isNew={newItemIds.has(item.id)} isFading={fadingItemIds.has(item.id)} selected={selectedItemId===item.id} onNewItemHandled={onNewItemHandled}><p className="onair-preserved-text">{item.location||t('emptyValue')}</p></MappedItem>)}</section>}
    {group.phones.length>0&&<section className="onair-list-block"><h4>{t('sections.phones')} <small>{group.phones.length}</small></h4>{group.phones.map(item=><MappedItem key={item.id} itemId={item.id} kind="phones" template={item.template} values={{Nume:item.name,Functie:item.role,Image:item.imagePath}} project={project} projectId={projectId} liveBoard={liveBoard} t={t} isNew={newItemIds.has(item.id)} isFading={fadingItemIds.has(item.id)} selected={selectedItemId===item.id} onNewItemHandled={onNewItemHandled}><div><strong className="onair-preserved-text">{item.name||t('emptyValue')}</strong>{item.role&&<p className="onair-secondary-text">{item.role}</p>}{item.imagePath&&<p className="onair-image-path"><span>{t('imagePath')}</span><code>{item.imagePath}</code></p>}</div></MappedItem>)}</section>}
+   {group.waitTitleLocations.length>0&&<section className="onair-list-block"><h4>{t('sections.waitTitleLocations')} <small>{group.waitTitleLocations.length}</small></h4>{group.waitTitleLocations.map(item=><MappedItem key={item.id} itemId={item.id} kind="waitTitlesLocations" template={item.template} values={{Titlu:item.title,Locatie:item.location}} project={project} projectId={projectId} liveBoard={liveBoard} t={t} isNew={newItemIds.has(item.id)} isFading={fadingItemIds.has(item.id)} selected={selectedItemId===item.id} onNewItemHandled={onNewItemHandled}><div><strong className="onair-preserved-text">{item.title||t('emptyValue')}</strong><p className="onair-secondary-text">{item.location||t('emptyValue')}</p></div></MappedItem>)}</section>}
   </div>}
    </div>
   </div>
@@ -400,7 +401,7 @@ function MappedItem({itemId,kind,template,values,project,projectId,liveBoard,t,c
 function makeTabs(groups:OnAirGroup[],t:(key:string,options?:Record<string,unknown>)=>string):Tab[]{
  const invited=groups.filter(group=>group.kind==='invited')
  const ordered=[...invited,...groups.filter(group=>group.kind==='beta'),...groups.filter(group=>group.kind!=='invited'&&group.kind!=='beta')]
- if(!invited.length){ordered.unshift({id:'__onair-empty-invited__',name:'',kind:'invited',titles:[],persons:[],locations:[],phones:[]})}
+ if(!invited.length){ordered.unshift({id:'__onair-empty-invited__',name:'',kind:'invited',titles:[],persons:[],locations:[],phones:[],waitTitleLocations:[]})}
  const betaNumber=new Map<OnAirGroup,string>()
  let betaIndex=0
  for(const group of ordered){if(group.kind==='beta'){betaIndex++;const explicit=group.name.match(/^beta\s*(\d+)/i);betaNumber.set(group,explicit?explicit[1]:String(betaIndex))}}
@@ -422,10 +423,11 @@ function findNewItemIds(previous:OnAirState['snapshot'],next:NonNullable<OnAirSt
   for(const item of group.persons)increment(priorCounts,fingerprint('persons',group,item))
   for(const item of group.locations)increment(priorCounts,fingerprint('locations',group,item))
   for(const item of group.phones)increment(priorCounts,fingerprint('phones',group,item))
+  for(const item of group.waitTitleLocations)increment(priorCounts,fingerprint('waitTitlesLocations',group,item))
  }
  const newIds=new Set<string>()
  for(const group of next.groups){
-  for(const [kind,items] of [['titles',group.titles],['persons',group.persons],['locations',group.locations],['phones',group.phones]] as const){
+  for(const [kind,items] of [['titles',group.titles],['persons',group.persons],['locations',group.locations],['phones',group.phones],['waitTitlesLocations',group.waitTitleLocations]] as const){
    for(const item of items){
     const key=fingerprint(kind,group,item)
     const count=priorCounts.get(key)??0
@@ -438,7 +440,7 @@ function findNewItemIds(previous:OnAirState['snapshot'],next:NonNullable<OnAirSt
 }
 function getOnAirItemIds(snapshot:NonNullable<OnAirState['snapshot']>):Set<string>{
  const ids=new Set<string>()
- for(const group of snapshot.groups)for(const items of [group.titles,group.persons,group.locations,group.phones])for(const item of items)ids.add(item.id)
+ for(const group of snapshot.groups)for(const items of [group.titles,group.persons,group.locations,group.phones,group.waitTitleLocations])for(const item of items)ids.add(item.id)
  return ids
 }
 function removeId(current:Set<string>,id:string):Set<string>{if(!current.has(id))return current;const next=new Set(current);next.delete(id);return next}

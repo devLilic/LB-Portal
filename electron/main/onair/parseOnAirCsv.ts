@@ -7,9 +7,10 @@ import type {
   OnAirPerson,
   OnAirPhone,
   OnAirTitle,
+  OnAirWaitTitleLocation,
 } from '../../../src/shared/onair/contracts'
 
-export type OnAirCsvFileKind = 'titles' | 'persons' | 'locations' | 'phones'
+export type OnAirCsvFileKind = 'titles' | 'persons' | 'locations' | 'phones' | 'wait_titles_locations'
 export type OnAirCsvFileName = `${string}_${OnAirCsvFileKind}.csv`
 
 export class OnAirCsvError extends Error {
@@ -30,6 +31,7 @@ const expectedHeaders: Record<OnAirCsvFileKind, string[]> = {
   persons: ['Sectiune', 'Nume', 'Functie', 'Template'],
   locations: ['Locatie'],
   phones: ['Nume', 'Functie', 'Image'],
+  wait_titles_locations: ['Titlu', 'Locatie', 'Template'],
 }
 
 const optionalTemplateHeaderFiles = new Set<OnAirCsvFileKind>(['locations', 'phones'])
@@ -99,6 +101,7 @@ interface ParsedGroup {
   persons: OnAirPerson[]
   locations: OnAirLocation[]
   phones: OnAirPhone[]
+  waitTitleLocations: OnAirWaitTitleLocation[]
 }
 
 export function assembleOnAirGroups(
@@ -107,9 +110,11 @@ export function assembleOnAirGroups(
   personsRows: CsvRow[],
   locationsRows: CsvRow[],
   phonesRows: CsvRow[],
-  files: [OnAirCsvFileName, OnAirCsvFileName, OnAirCsvFileName, OnAirCsvFileName] = ['PA_titles.csv', 'PA_persons.csv', 'PA_locations.csv', 'PA_phones.csv'],
+  waitTitleLocationsRows: CsvRow[] = [],
+  files: OnAirCsvFileName[] = ['PA_titles.csv', 'PA_persons.csv', 'PA_locations.csv', 'PA_phones.csv', 'PA_wait_titles_locations.csv'],
 ): OnAirGroup[] {
   const [titlesFile, personsFile, locationsFile, phonesFile] = files
+  const waitTitleLocationsFile = files[4] ?? 'PA_wait_titles_locations.csv'
   const groups: ParsedGroup[] = []
   const indexesByKey = new Map<string, ParsedGroup>()
 
@@ -134,6 +139,7 @@ export function assembleOnAirGroups(
       persons: [],
       locations: [],
       phones: [],
+      waitTitleLocations: [],
     }
     indexesByKey.set(key, created)
     groups.push(created)
@@ -152,7 +158,7 @@ export function assembleOnAirGroups(
       name,
       kind: getGroupKind(name),
       occurrence: 1,
-      titles: [], persons: [], locations: [], phones: [],
+      titles: [], persons: [], locations: [], phones: [], waitTitleLocations: [],
     }
     indexesByKey.set(key, created)
     groups.push(created)
@@ -195,7 +201,7 @@ export function assembleOnAirGroups(
     const key = 'invited#1'
     const existing = indexesByKey.get(key)
     if (existing) return existing
-    const created: ParsedGroup = { id: `${projectId}:${key}`, name: 'INVITATI', kind: 'invited', occurrence: 1, titles: [], persons: [], locations: [], phones: [] }
+    const created: ParsedGroup = { id: `${projectId}:${key}`, name: 'INVITATI', kind: 'invited', occurrence: 1, titles: [], persons: [], locations: [], phones: [], waitTitleLocations: [] }
     indexesByKey.set(key, created)
     groups.push(created)
     return created
@@ -217,7 +223,15 @@ export function assembleOnAirGroups(
     group.phones.push({ id: `${group.id}:phone:${row.record}`, source, name, role, imagePath, template })
   }
 
-  return groups.map(({ id, name, kind, titles, persons, locations, phones }) => ({ id, name, kind, titles, persons, locations, phones }))
+  for (const row of waitTitleLocationsRows) {
+    if (row.values.every(value => value.trim() === '')) continue
+    const [title, location, template] = row.values
+    const group = invitedGroup()
+    const source = itemSource(waitTitleLocationsFile, row)
+    group.waitTitleLocations.push({ id: `${group.id}:wait-title-location:${row.record}`, source, title, location, template })
+  }
+
+  return groups.map(({ id, name, kind, titles, persons, locations, phones, waitTitleLocations }) => ({ id, name, kind, titles, persons, locations, phones, waitTitleLocations }))
 }
 
 function itemSource(file: OnAirCsvFileName, row: CsvRow): OnAirItemSource {
@@ -225,7 +239,7 @@ function itemSource(file: OnAirCsvFileName, row: CsvRow): OnAirItemSource {
 }
 
 function fileKind(file: string): OnAirCsvFileKind | null {
-  const match = file.match(/_(titles|persons|locations|phones)\.csv$/i)
+  const match = file.match(/_(titles|persons|locations|phones|wait_titles_locations)\.csv$/i)
   return (match?.[1]?.toLowerCase() as OnAirCsvFileKind | undefined) ?? null
 }
 

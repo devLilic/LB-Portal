@@ -5,7 +5,7 @@ import { getOnAirEffectiveTemplate, getOnAirMappingIssues, onAirSourceFields, ty
 import './OnAirMappingsEditor.css'
 
 const makeId=()=>globalThis.crypto?.randomUUID?.()??`onair-${Date.now()}-${Math.random().toString(36).slice(2)}`
-const kinds:OnAirGraphicKind[]=['titles','persons','locations','phones']
+const kinds:OnAirGraphicKind[]=['titles','persons','locations','phones','waitTitlesLocations']
 type T=(key:string,options?:Record<string,unknown>)=>string
 
 export default function OnAirMappingsEditor({project,t,onChange}:{project:MosProject;t:T;onChange:(value:OnAirGraphicMapping[])=>void}){
@@ -21,6 +21,7 @@ export default function OnAirMappingsEditor({project,t,onChange}:{project:MosPro
    persons:projectSnapshot?.groups.flatMap(group=>group.persons.map(row=>row.template))??[],
    locations:projectSnapshot?.groups.flatMap(group=>group.locations.map(row=>getOnAirEffectiveTemplate('locations',row.template,project.onAirDefaultTemplates)))??[],
    phones:projectSnapshot?.groups.flatMap(group=>group.phones.map(row=>getOnAirEffectiveTemplate('phones',row.template,project.onAirDefaultTemplates)))??[],
+   waitTitlesLocations:projectSnapshot?.groups.flatMap(group=>group.waitTitleLocations.map(row=>row.template))??[],
   }
   return kinds.flatMap(kind=>[...new Set(templates[kind].filter(template=>template.trim()))].map(template=>({kind,template})))
  },[projectSnapshot,project.onAirDefaultTemplates])

@@ -9,6 +9,7 @@
       "folder": "Folder CSV",
       "folderPlaceholder": "Calea absolută a folderului",
       "filePrefix": "Prefix fișiere",
+      "includeWaitTitlesLocations": "Citește fișierul opțional Titlu și locație de așteptare",
       "invalidPrefix": "Prefixul trebuie să conțină doar litere, cifre, _ sau - și să se termine cu _.",
       "chooseFolder": "Alege folderul",
       "choosing": "Se alege…",
@@ -138,7 +139,7 @@
       "removeField": "Elimină maparea câmpului",
       "sectionInUse": "Această secțiune este folosită de o mapare CSV OnAir. Elimină sau mută mai întâi maparea.",
       "targetInUse": "Acest șablon este folosit de o mapare de câmp CSV OnAir. Elimină sau actualizează mai întâi maparea.",
-      "kinds": {"titles":"Titluri","persons":"Persoane","locations":"Locații","phones":"Telefoane"},
+      "kinds": {"titles":"Titluri","persons":"Persoane","locations":"Locații","phones":"Telefoane","waitTitlesLocations":"Titlu și locație de așteptare"},
       "fields": {"Titlu":"Titlu","Supratitlu":"Supratitlu","Nume":"Nume","Functie":"Funcție","Locatie":"Locație","Image":"Imagine"},
       "validation": {"invalidStructure":"Structură invalidă pentru maparea OnAir.","duplicateId":"Identificatorii mapărilor trebuie să fie unici.","required":"Alege o valoare pentru această mapare.","invalidKind":"Tip grafic CSV necunoscut.","duplicateSource":"Acest grafic CSV are deja o mapare.","invalidSection":"Alege o secțiune LiveBoard existentă.","invalidSourceField":"Alege un câmp disponibil pentru acest tip de grafic.","duplicateSourceField":"Alege două câmpuri CSV diferite.","invalidSeparator":"Separatorul trebuie să fie text.","invalidTarget":"Un șablon LiveBoard mapat nu mai există.","invalidTargetFields":"Introdu cel puțin un nume de câmp destinație.","duplicateTargetField":"Un câmp destinație este repetat."}
     },
