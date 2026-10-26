@@ -1,7 +1,7 @@
 {
   "name": "lb-portal",
   "productName": "LB-Portal",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "main": "dist-electron/main/index.js",
   "description": "Bridge between Plasma MOS and LiveBoard.",
   "author": "devLilic13",
