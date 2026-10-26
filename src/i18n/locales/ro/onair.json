@@ -59,7 +59,7 @@
     "noFields": "Nu sunt mapate câmpuri pentru această destinație.",
     "settingsUnavailable": "Mapările LiveBoard salvate nu au putut fi încărcate."
   },
-  "staticGraphics": {"title":"Grafici fixe ale proiectului","help":"Elemente salvate în proiect, independente de CSV și Plasma.","values":"Valori fixe"},
+  "staticGraphics": {"title":"Grafici fixe ale proiectului","help":"Elemente salvate în proiect, independente de CSV și Plasma.","values":"Valori fixe","stopAll":"Oprește toate","stoppingAll":"Se opresc...","stopAllDone":"Oprite: {{count}}","stopAllPartial":"STOP eșuat: {{count}}"},
   "snapshot": { "title": "Date OnAir curente" },
   "loadProjectsError": {
     "title": "Proiectele nu au putut fi încărcate",

@@ -59,7 +59,7 @@
     "noFields": "Поля назначения не сопоставлены.",
     "settingsUnavailable": "Не удалось загрузить сохранённые сопоставления LiveBoard."
   },
-  "staticGraphics": {"title":"Постоянная графика проекта","help":"Графика сохранена в проекте и не зависит от CSV или Plasma.","values":"Фиксированные значения"},
+  "staticGraphics": {"title":"Постоянная графика проекта","help":"Графика сохранена в проекте и не зависит от CSV или Plasma.","values":"Фиксированные значения","stopAll":"Остановить всё","stoppingAll":"Остановка...","stopAllDone":"Остановлено: {{count}}","stopAllPartial":"Ошибка STOP: {{count}}"},
   "snapshot": { "title": "Текущие данные OnAir" },
   "loadProjectsError": {
     "title": "Не удалось загрузить проекты",

@@ -25,6 +25,9 @@ export default function OnAirPage({selectedProjectId,onSelectedProjectIdChange,c
  const [projectActivationBusy,setProjectActivationBusy]=useState(false)
  const [projectActivationNotice,setProjectActivationNotice]=useState('')
  const [projectActivationFailed,setProjectActivationFailed]=useState(false)
+ const [stopAllBusy,setStopAllBusy]=useState(false)
+ const [stopAllNotice,setStopAllNotice]=useState('')
+ const [stopAllFailed,setStopAllFailed]=useState(false)
  const [selectedGroupKey,setSelectedGroupKey]=useState<string|null>(null)
  const [listError,setListError]=useState(false)
  const [loading,setLoading]=useState(true)
@@ -197,6 +200,18 @@ export default function OnAirPage({selectedProjectId,onSelectedProjectIdChange,c
   return()=>window.removeEventListener('keydown',handleRefreshKey)
  },[project?.id,folderPath,busy,loading,loadSnapshot])
  const mosProject=mosProjects.find(item=>item.id===selectedProjectId)??null
+ const stopAllAvailable=!!mosProject&&!!liveBoard&&liveBoard.activeProject.id===mosProject.id&&!liveBoardExecutionBusy&&(liveBoard.connection.mode==='simulation'||liveBoard.connection.status==='connected')
+ const stopAllProjectGraphics=async()=>{
+  if(!mosProject||!stopAllAvailable||stopAllBusy)return
+  setStopAllBusy(true);setStopAllNotice('');setStopAllFailed(false)
+  try{
+   const result=await window.liveBoardApi.stopAllProjectSections(mosProject.id)
+   setLiveBoard(result.snapshot)
+   if(result.failedSectionIds.length){setStopAllNotice(t('staticGraphics.stopAllPartial',{count:result.failedSectionIds.length}));setStopAllFailed(true)}
+   else setStopAllNotice(t('staticGraphics.stopAllDone',{count:result.stopped}))
+  }catch(reason){setStopAllNotice(reason instanceof Error?reason.message:String(reason));setStopAllFailed(true)}
+  finally{setStopAllBusy(false)}
+ }
  const tabs=makeTabs(snapshot?.groups??[],t)
  const tabKeys=tabs.map(tab=>tab.key).join('\0')
 
@@ -311,7 +326,7 @@ export default function OnAirPage({selectedProjectId,onSelectedProjectIdChange,c
       </section>}
      </>:<section className="onair-empty"><h3>{t('empty.title')}</h3><p>{t('empty.body')}</p></section>}
    </section>}
-   {mosProject?.staticGraphics?.length? <section className="onair-static-graphics" aria-label={t('staticGraphics.title')}><div className="onair-static-graphics-grid">{mosProject.staticGraphics.map(graphic=><StaticGraphicItem key={graphic.id} graphic={graphic} projectId={mosProject.id} liveBoard={liveBoard} t={t}/>)}</div></section>:null}
+   <section className="onair-static-graphics" aria-label={t('staticGraphics.title')}><div className="onair-static-graphics-row"><div className="onair-static-graphics-grid">{(mosProject?.staticGraphics??[]).map(graphic=><StaticGraphicItem key={graphic.id} graphic={graphic} projectId={mosProject?.id??''} liveBoard={liveBoard} t={t}/>)}</div>{stopAllNotice&&<span className={`onair-static-graphics-notice${stopAllFailed?' is-error':''}`} role={stopAllFailed?'alert':'status'} title={stopAllNotice}>{stopAllNotice}</span>}<button type="button" className="onair-stop-all" disabled={!stopAllAvailable||stopAllBusy} onClick={()=>void stopAllProjectGraphics()}>{stopAllBusy?t('staticGraphics.stoppingAll'):t('staticGraphics.stopAll')}</button></div></section>
   </>}
   </section>
  </>

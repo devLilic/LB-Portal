@@ -73,6 +73,7 @@ export interface LiveBoardProjectSummary { id:string; name:string; kind:MosProje
 export interface LiveBoardSnapshot { connection: LiveBoardConnectionSnapshot; activeProject:LiveBoardProjectSummary; projects:LiveBoardProjectSummary[]; sections: LiveBoardSectionSnapshot[]; operations: LiveBoardExecutionReport[] }
 export type LiveBoardResyncState = 'OFF' | 'A' | 'B' | 'single'
 export type ProjectActivationResult = {ok:true;value:LiveBoardSnapshot}|{ok:false;error:{code:LiveBoardSettingsDenialCode|'LIVEBOARD_PROJECT_NOT_FOUND';sectionNames:string[]}}
+export type LiveBoardStopAllResult = {snapshot:LiveBoardSnapshot;stopped:number;failedSectionIds:string[]}
 
 export interface LiveBoardApi {
   getSnapshot(): Promise<LiveBoardSnapshot>
@@ -81,8 +82,9 @@ export interface LiveBoardApi {
   disconnect(): Promise<LiveBoardSnapshot>
   takeOutSection(sectionId: string): Promise<LiveBoardSnapshot>
   stopSection(sectionId: string): Promise<LiveBoardSnapshot>
+  stopAllProjectSections(projectId: string): Promise<LiveBoardStopAllResult>
   resyncSection(sectionId: string, state: LiveBoardResyncState): Promise<LiveBoardSnapshot>
   setActiveProject(projectId:string):Promise<ProjectActivationResult>
 }
-export const liveBoardInvokeChannels = { getSnapshot:'liveboard:get-snapshot', connect:'liveboard:connect', disconnect:'liveboard:disconnect', takeOut:'liveboard:take-out', stop:'liveboard:stop', resync:'liveboard:resync', setActiveProject:'liveboard:set-active-project' } as const
+export const liveBoardInvokeChannels = { getSnapshot:'liveboard:get-snapshot', connect:'liveboard:connect', disconnect:'liveboard:disconnect', takeOut:'liveboard:take-out', stop:'liveboard:stop', stopAll:'liveboard:stop-all', resync:'liveboard:resync', setActiveProject:'liveboard:set-active-project' } as const
 export const liveBoardEventChannels = { snapshot:'liveboard:snapshot' } as const

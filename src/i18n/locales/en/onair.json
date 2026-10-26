@@ -59,7 +59,7 @@
     "noFields": "No destination fields are mapped.",
     "settingsUnavailable": "Saved LiveBoard mappings could not be loaded."
   },
-  "staticGraphics": {"title":"Project static graphics","help":"Graphics saved in this project, independent of CSV and Plasma.","values":"Fixed values"},
+  "staticGraphics": {"title":"Project static graphics","help":"Graphics saved in this project, independent of CSV and Plasma.","values":"Fixed values","stopAll":"Stop all","stoppingAll":"Stopping...","stopAllDone":"Stopped: {{count}}","stopAllPartial":"STOP failed: {{count}}"},
   "snapshot": { "title": "Current OnAir data" },
   "loadProjectsError": {
     "title": "Projects could not be loaded",

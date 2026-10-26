@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { PreloadModule } from '../../../src/shared/modules/contracts'
 import type { ReceivedRequest, ReceiverInfo } from '../../../src/shared/ingress/contracts'
 import { ingressEventChannels, ingressInvokeChannels } from '../../../src/shared/ingress/channels'
-import { liveBoardEventChannels, liveBoardInvokeChannels, type LiveBoardApi, type LiveBoardSnapshot, type LiveBoardResyncState, type ProjectActivationResult } from '../../../src/shared/liveboard/runtime'
+import { liveBoardEventChannels, liveBoardInvokeChannels, type LiveBoardApi, type LiveBoardSnapshot, type LiveBoardResyncState, type LiveBoardStopAllResult, type ProjectActivationResult } from '../../../src/shared/liveboard/runtime'
 
 export function createLBPortalApiPreloadModule(): PreloadModule {
   return {
@@ -29,6 +29,7 @@ export function createLBPortalApiPreloadModule(): PreloadModule {
         disconnect: () => ipcRenderer.invoke(liveBoardInvokeChannels.disconnect) as Promise<LiveBoardSnapshot>,
         takeOutSection: (sectionId: string) => ipcRenderer.invoke(liveBoardInvokeChannels.takeOut, sectionId) as Promise<LiveBoardSnapshot>,
         stopSection: (sectionId: string) => ipcRenderer.invoke(liveBoardInvokeChannels.stop, sectionId) as Promise<LiveBoardSnapshot>,
+        stopAllProjectSections: (projectId: string) => ipcRenderer.invoke(liveBoardInvokeChannels.stopAll, projectId) as Promise<LiveBoardStopAllResult>,
         resyncSection: (sectionId: string, state: LiveBoardResyncState) => ipcRenderer.invoke(liveBoardInvokeChannels.resync, sectionId, state) as Promise<LiveBoardSnapshot>,
         setActiveProject: (projectId:string) => ipcRenderer.invoke(liveBoardInvokeChannels.setActiveProject,projectId) as Promise<ProjectActivationResult>,
         onSnapshot(listener: (snapshot: LiveBoardSnapshot) => void) {

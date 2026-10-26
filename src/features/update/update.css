@@ -26,3 +26,7 @@
   cursor: wait;
   opacity: 0.55;
 }
+
+.portal.portal-onair ~ .update-check-button {
+  display: none;
+}
