@@ -57,5 +57,6 @@ jobs:
           files: |
             release/**/LB-Portal-*-x64.exe
             release/**/LB-Portal-*-x64.exe.blockmap
+            release/**/latest.yml
           fail_on_unmatched_files: true
           overwrite_files: true

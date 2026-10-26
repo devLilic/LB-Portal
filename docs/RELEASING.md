@@ -30,6 +30,8 @@ npm run version:major  # 0.1.0 -> 1.0.0: breaking changes
 git push origin main --follow-tags
 ```
 
+The Windows release must include the generated `latest.yml` alongside the installer and `.blockmap`. `electron-updater` reads `latest.yml` to discover the release version and installer URL; without it, installed applications cannot find updates.
+
 Keep the release tag and package version identical. The workflow rejects mismatches. Pre-release versions and tags are not published by this workflow; stable releases are the update channel.
 
 ## GitHub configuration
