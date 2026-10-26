@@ -12,12 +12,18 @@ import enSettings from '../../../src/i18n/locales/en/settings.json'
 import ruSettings from '../../../src/i18n/locales/ru/settings.json'
 
 export async function createMainWindow(config: AppConfig) {
+  const windowTitle = `LB-Portal (${app.getVersion()})`
   const window = createSecureBrowserWindow({
-    title: 'LB-Portal',
+    title: windowTitle,
     backgroundColor: '#070d16',
     webPreferences: { devTools: false },
   })
   window.maximize()
+
+  window.webContents.on('page-title-updated', (event) => {
+    event.preventDefault()
+    window.setTitle(windowTitle)
+  })
 
   window.webContents.on('render-process-gone', (_event, details) => {
     writeRendererDiagnostic({
