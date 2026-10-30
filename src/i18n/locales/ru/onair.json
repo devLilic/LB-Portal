@@ -50,8 +50,6 @@
     "loading": "Загрузка сохранённых сопоставлений…",
     "templateMissing": "Нет исходного шаблона",
     "sourceMissing": "В этой строке CSV не указано значение исходного шаблона.",
-    "templateImplicit": "Шаблон по умолчанию в проекте: {{template}}",
-    "templateImplicitBadge": "В CSV нет шаблона · используется: {{template}}",
     "unmapped": "Для этого исходного шаблона не настроено сопоставление LiveBoard.",
     "missingTemplate": "Настроенный раздел или шаблон LiveBoard не найден.",
     "section": "Раздел",

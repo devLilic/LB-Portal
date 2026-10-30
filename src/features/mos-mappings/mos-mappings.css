@@ -64,7 +64,8 @@
 .mos-rule-summary{margin:3px 0 0!important;color:#91a0b8;font-size:12px}
 .mos-editor{container:mos-editor / inline-size}.mos-step-top-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-bottom:14px}.mos-config-step{min-width:0}.mos-config-step>.mos-step-title{margin:0 0 9px}.mos-config-step>.mos-panel{margin:0}.mos-section-name-row{display:flex;align-items:flex-end;gap:10px;margin-bottom:10px}.mos-section-name-row label{flex:0 1 32rem;max-width:32rem}.mos-section-name-row>button{flex:0 0 auto}.mos-destination-panel{margin:0!important}.mos-destination-panel .mos-panel-title{align-items:center;margin-bottom:9px}.mos-target-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.mos-target-grid .mos-target{min-width:0;margin:0}.mos-target-grid .mos-target label{min-width:0}.mos-timing-panel{min-height:0}.mos-timing-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}.mos-timing-field{min-width:0}.mos-timing-field label{min-width:0}.mos-timing-field p{margin:6px 0 0;font-size:12px;line-height:1.45}@container mos-editor (min-width:1200px){.mos-step-top-grid{grid-template-columns:minmax(0,1.6fr) minmax(20rem,.9fr);align-items:start}}
 .mos-map-table textarea{min-width:0;width:100%;padding:9px 10px;border:1px solid #344966;border-radius:8px;background:#091321;color:#eaf0fa;font:inherit;resize:vertical;min-height:58px}
-.mos-onair-csv{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:0 0 14px}.mos-onair-csv h3{margin:0 0 5px}.mos-onair-csv-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,170px) auto auto;align-items:end;gap:8px}.mos-onair-csv-controls label{min-width:0}.mos-onair-csv-controls button{white-space:nowrap}@media(max-width:680px){.mos-onair-csv-controls{grid-template-columns:minmax(0,1fr)}.mos-onair-csv-controls button{justify-self:start}}
+.mos-onair-csv{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:0 0 14px}.mos-onair-csv h3{margin:0 0 5px}.mos-onair-csv-controls{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:end;gap:8px}.mos-onair-csv-controls label{min-width:0}.mos-onair-csv-controls button{white-space:nowrap}@media(max-width:680px){.mos-onair-csv-controls{grid-template-columns:minmax(0,1fr)}.mos-onair-csv-controls button{justify-self:start}}
+.mos-csv-section-source{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mos-csv-section-source>label{min-width:0}.mos-csv-section-source select,.mos-csv-section-source input{width:100%}.mos-csv-column-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}.mos-csv-column-grid label{min-width:0}.mos-csv-column-grid select{width:100%}.mos-csv-columns-help{grid-column:1/-1;margin:0;color:#9aabc2;font-size:12px;line-height:1.45}
 .mos-onair-default-templates{padding-top:8px;border-top:1px solid #263752}.mos-onair-default-templates p{margin:0 0 10px;color:#99a8be}.mos-onair-default-templates>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.mos-onair-default-templates input{min-width:0}@media(max-width:680px){.mos-onair-default-templates>div{grid-template-columns:1fr}}
 
 /* Settings visual pass: keep control geometry stable and let labels carry the hierarchy. */
@@ -136,7 +137,7 @@
 .mos-action-row{gap:8px;margin:7px 0;padding:9px;border-color:#293d57;background:#0d1827}
 .mos-action-buttons{align-self:end}
 .mos-onair-csv{gap:10px}
-.mos-onair-csv-controls{grid-template-columns:minmax(0,1fr) minmax(110px,170px) auto auto;gap:8px}
+.mos-onair-csv-controls{grid-template-columns:minmax(0,1fr) auto auto;gap:8px}
 .mos-onair-default-templates{padding-top:10px}
 .mos-footer{gap:12px;margin-top:12px;padding:10px 12px;border-color:#2d4260;border-radius:9px;background:#101b2b}
 .mos-footer>p{min-width:0;font-size:12px;line-height:1.4}
@@ -146,7 +147,7 @@
 .mos-empty{padding:30px 18px}
 @media(max-width:1100px){.mos-layout{grid-template-columns:minmax(190px,230px) minmax(0,1fr)}.mos-action-row{grid-template-columns:28px repeat(2,minmax(0,1fr))}.mos-action-buttons{grid-column:2/-1}}
 @media(max-width:760px){.mos-settings>.mos-heading{align-items:flex-start}.mos-layout{grid-template-columns:minmax(0,1fr)}.mos-sections{position:static}.mos-sections>div:last-child{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:5px 8px}.mos-toolbar,.mos-section-name-row{align-items:stretch;flex-direction:column}.mos-toolbar label,.mos-section-name-row label{max-width:none;width:100%}.mos-source-options{grid-template-columns:repeat(2,minmax(0,1fr))}.mos-interaction-rule>header{flex-direction:row;align-items:flex-start}.mos-inline-controls{flex-wrap:wrap}.mos-onair-csv-controls{grid-template-columns:minmax(0,1fr) minmax(110px,170px) auto auto}}
-@media(max-width:560px){.mos-settings>.mos-heading{gap:10px}.mos-heading h2{font-size:21px}.mos-project-selector{align-items:stretch}.mos-project-selector label{min-width:0;max-width:none}.mos-editor-tabs{overflow-x:auto}.mos-editor-tabs button{white-space:nowrap}.mos-source-options,.mos-interaction-grid,.mos-action-row,.mos-onair-default-templates>div{grid-template-columns:minmax(0,1fr)}.mos-interaction-rule>header{flex-direction:column}.mos-action-buttons{grid-column:auto}.mos-onair-csv-controls{grid-template-columns:minmax(0,1fr)}.mos-onair-csv-controls button{justify-self:stretch}.mos-footer{align-items:stretch}.mos-footer>div{width:100%;justify-content:stretch}.mos-footer button{width:100%}}
+@media(max-width:560px){.mos-settings>.mos-heading{gap:10px}.mos-heading h2{font-size:21px}.mos-project-selector{align-items:stretch}.mos-project-selector label{min-width:0;max-width:none}.mos-editor-tabs{overflow-x:auto}.mos-editor-tabs button{white-space:nowrap}.mos-source-options,.mos-interaction-grid,.mos-action-row,.mos-csv-section-source{grid-template-columns:minmax(0,1fr)}.mos-interaction-rule>header{flex-direction:column}.mos-action-buttons{grid-column:auto}.mos-onair-csv-controls{grid-template-columns:minmax(0,1fr)}.mos-onair-csv-controls button{justify-self:stretch}.mos-footer{align-items:stretch}.mos-footer>div{width:100%;justify-content:stretch}.mos-footer button{width:100%}}
 
 .portal-nav{align-items:center;justify-content:space-between;gap:12px}.portal-nav-tabs{display:flex;align-items:center;gap:8px}.portal-nav-actions{display:flex;align-items:center;justify-content:flex-end;min-width:0;margin-left:auto}@media(max-width:760px){.portal-nav{flex-wrap:wrap}.portal-nav-tabs{flex-wrap:wrap}.portal-nav-actions{width:100%;margin-left:0;justify-content:flex-start}}
 
@@ -166,3 +167,16 @@ html,body,#root{height:100%;min-height:0;overflow:hidden}.portal{display:flex;fl
 .portal.portal-console>.console-page>.lb-runtime .lb-runtime-overview{grid-template-columns:minmax(0,1fr)}
 /* Keep the title list inside the available OnAir panel and preserve room after its last card. */
 .portal.portal-onair .onair-titles-block{box-sizing:border-box;min-height:0;max-height:max(160px,calc(100vh - 260px));max-height:max(160px,calc(100dvh - 260px));padding-bottom:20px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+/* Keep section reordering quiet and visually grouped with each section row. */
+.mos-section-order{align-items:center;gap:0;min-height:32px;padding:1px;border:1px solid #304660;border-radius:8px;background:#0c1726}
+.mos-section-order button{position:relative;display:grid;place-items:center;flex:0 0 23px;width:23px;min-width:23px;height:28px;min-height:28px;padding:0;border:0;border-radius:5px;background:transparent;color:#a9bdd6;font-size:0;line-height:1}
+.mos-section-order button+button{border-left:1px solid #304660;border-radius:0 5px 5px 0}
+.mos-section-order button::before{width:7px;height:7px;border-top:1.5px solid currentColor;border-right:1.5px solid currentColor;content:"";transform:translateY(2px) rotate(-45deg)}
+.mos-section-order button+button::before{transform:translateY(-2px) rotate(135deg)}
+.mos-section-order button:hover:not(:disabled){background:#1c3048;color:#eaf3ff}
+.mos-section-order button:focus-visible{z-index:1;outline:2px solid #79b4fa;outline-offset:-2px}
+.mos-section-order button:disabled{color:#60748f;opacity:.55}
+
+/* Keep section names aligned and compact in the narrow navigation list. */
+.mos-section-label{display:block;flex:1;min-width:0;overflow:hidden;overflow-wrap:normal;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;line-height:1.35;color:#cbd8e9}
+.mos-section-item.selected .mos-section-label{color:#f4f8ff}

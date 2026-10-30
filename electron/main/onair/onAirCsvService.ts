@@ -1,4 +1,4 @@
-import { readFile, stat } from 'node:fs/promises'
+import { readFile, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import type {
   OnAirError,
@@ -10,11 +10,10 @@ import type {
 import { normalizeMosProjects, type MosProject } from '../../../src/shared/settings/mosProjects'
 import type { SettingsKey, AppSettings } from '../../../src/shared/settings/types'
 import { subscribeSettingsChanges, type SettingsStore } from '../modules/settings/settingsStore'
-import { assembleOnAirGroups, OnAirCsvError, parseOnAirCsvFile, type OnAirCsvFileKind, type OnAirCsvFileName } from './parseOnAirCsv'
+import { assembleOnAirGroups, OnAirCsvError, parseOnAirCsvFile, parseOnAirCsvHeaders, type OnAirCsvFileKind, type OnAirCsvFileName } from './parseOnAirCsv'
 
-const standardFileKinds: OnAirCsvFileKind[] = ['titles', 'persons', 'locations', 'phones']
-const waitTitlesLocationsFileKind: OnAirCsvFileKind = 'wait_titles_locations'
 const maxAttempts = 3
+type CsvSourceConfig = { kind: OnAirCsvFileKind; fileName: string; columns?: Record<string, string> }
 
 interface CachedSnapshot {
   snapshot: OnAirSnapshot
@@ -23,6 +22,8 @@ interface CachedSnapshot {
 
 export interface OnAirCsvService {
   listProjects(): OnAirProjectSummary[]
+  listCsvFiles(folderPath: string): Promise<string[]>
+  readCsvHeaders(folderPath: string, fileName: string): Promise<string[]>
   getSnapshot(projectId: string): OnAirState
   refresh(projectId: string): Promise<OnAirState>
   dispose(): void
@@ -30,13 +31,14 @@ export interface OnAirCsvService {
 
 export interface OnAirCsvServiceDependencies {
   readFile(filePath: string): Promise<Buffer>
+  readdir?(folderPath: string, options: { withFileTypes: true }): Promise<Array<{ name: string; isFile(): boolean }>>
   stat(filePath: string): Promise<{ dev: number | bigint; ino: number | bigint; size: number; mtimeMs: number; ctimeMs: number; isFile(): boolean }>
 }
 
 export function createOnAirCsvService(
   settingsStore: SettingsStore,
   settingsDirectory: string,
-  dependencies: OnAirCsvServiceDependencies = { readFile, stat },
+  dependencies: OnAirCsvServiceDependencies = { readFile, readdir, stat },
 ): OnAirCsvService {
   const snapshots = new Map<string, CachedSnapshot>()
   const lastErrors = new Map<string, OnAirError>()
@@ -122,18 +124,30 @@ export function createOnAirCsvService(
     }))
   }
 
-  async function loadSnapshot(projectId: string, source: string, filePrefix: string, includeWaitTitlesLocations: boolean, generation: number): Promise<OnAirState> {
+  async function listCsvFiles(folderPath: string): Promise<string[]> {
+    const folder = validateFolderPath(folderPath)
+    const entries = await (dependencies.readdir ?? readdir)(folder, { withFileTypes: true })
+    return entries.filter(entry => entry.isFile() && /\.csv$/i.test(entry.name)).map(entry => entry.name).sort((a, b) => a.localeCompare(b))
+  }
+
+  async function readCsvHeaders(folderPath: string, fileName: string): Promise<string[]> {
+    const folder = validateFolderPath(folderPath)
+    if (typeof fileName !== 'string' || path.basename(fileName) !== fileName || !/^[^\\/:*?"<>|\0]+\.csv$/i.test(fileName)) throw new Error('Invalid CSV filename.')
+    const available = await listCsvFiles(folder)
+    if (!available.includes(fileName)) throw new Error('CSV file is not in the selected folder.')
+    return parseOnAirCsvHeaders(fileName, await dependencies.readFile(path.join(folder, fileName)))
+  }
+
+  async function loadSnapshot(projectId: string, source: string, selectedSources: CsvSourceConfig[], generation: number): Promise<OnAirState> {
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      const fileKinds = includeWaitTitlesLocations ? [...standardFileKinds, waitTitlesLocationsFileKind] : standardFileKinds
-      const files = fileKinds.map(kind => `${filePrefix}${kind}.csv` as OnAirCsvFileName)
+      const files = [...new Set(selectedSources.map(item => item.fileName))]
       let before: string[]
       try {
-        before = await Promise.all(files.map((file, index) => fileSignature(path.join(source, file), dependencies.stat).catch(error => {
-          if (fileKinds[index] === waitTitlesLocationsFileKind && isMissingFile(error)) return 'OPTIONAL_FILE_MISSING'
+        before = await Promise.all(files.map(file => fileSignature(path.join(source, file), dependencies.stat).catch(error => {
           throw withSourceFile(error, file)
         })))
       } catch (error) {
-        const changed = currentSourceError(projectId, source, filePrefix, includeWaitTitlesLocations, generation)
+        const changed = currentSourceError(projectId, source, selectedSources, generation)
         if (changed) return changed
         if (isMissingFile(error) && attempt < maxAttempts - 1) continue
         return state(projectId, safeFindProject(projectId), readError(error))
@@ -141,12 +155,11 @@ export function createOnAirCsvService(
 
       let contents: Buffer[]
       try {
-        contents = await Promise.all(files.map((file, index) => dependencies.readFile(path.join(source, file)).catch(error => {
-          if (fileKinds[index] === waitTitlesLocationsFileKind && isMissingFile(error)) return Buffer.from('Titlu;Locatie;Template', 'utf8')
+        contents = await Promise.all(files.map(file => dependencies.readFile(path.join(source, file)).catch(error => {
           throw withSourceFile(error, file)
         })))
       } catch (error) {
-        const changed = currentSourceError(projectId, source, filePrefix, includeWaitTitlesLocations, generation)
+        const changed = currentSourceError(projectId, source, selectedSources, generation)
         if (changed) return changed
         if (isMissingFile(error) && attempt < maxAttempts - 1) continue
         return state(projectId, safeFindProject(projectId), readError(error))
@@ -154,12 +167,11 @@ export function createOnAirCsvService(
 
       let after: string[]
       try {
-        after = await Promise.all(files.map((file, index) => fileSignature(path.join(source, file), dependencies.stat).catch(error => {
-          if (fileKinds[index] === waitTitlesLocationsFileKind && isMissingFile(error)) return 'OPTIONAL_FILE_MISSING'
+        after = await Promise.all(files.map(file => fileSignature(path.join(source, file), dependencies.stat).catch(error => {
           throw withSourceFile(error, file)
         })))
       } catch (error) {
-        const changed = currentSourceError(projectId, source, filePrefix, includeWaitTitlesLocations, generation)
+        const changed = currentSourceError(projectId, source, selectedSources, generation)
         if (changed) return changed
         if (isMissingFile(error) && attempt < maxAttempts - 1) continue
         return state(projectId, safeFindProject(projectId), readError(error))
@@ -169,13 +181,18 @@ export function createOnAirCsvService(
         return state(projectId, safeFindProject(projectId), { code: 'FILES_CHANGED' })
       }
 
-      const changed = currentSourceError(projectId, source, filePrefix, includeWaitTitlesLocations, generation)
+      const changed = currentSourceError(projectId, source, selectedSources, generation)
       if (changed) return changed
       const currentProject = findProject(projectId)!
 
       try {
-        const parsed = files.map((file, index) => parseOnAirCsvFile(file, contents[index]!))
-        const groups: OnAirGroup[] = assembleOnAirGroups(projectId, parsed[0]!, parsed[1]!, parsed[2]!, parsed[3]!, parsed[4] ?? [], files)
+        const contentsByFile = new Map(files.map((file, index) => [file, contents[index]!]))
+        const parsed = new Map<OnAirCsvFileKind, ReturnType<typeof parseOnAirCsvFile>>()
+        for (const item of selectedSources) {
+          const rows = parseOnAirCsvFile(item.fileName, contentsByFile.get(item.fileName)!, item.kind, item.columns)
+          parsed.set(item.kind, [...(parsed.get(item.kind) ?? []), ...rows])
+        }
+        const groups: OnAirGroup[] = assembleOnAirGroups(projectId, parsed.get('titles') ?? [], parsed.get('persons') ?? [], parsed.get('locations') ?? [], parsed.get('phones') ?? [], parsed.get('wait_titles_locations') ?? [])
         const snapshot: OnAirSnapshot = { projectId, folderPath: source, loadedAt: new Date().toISOString(), groups }
         snapshots.set(projectId, { snapshot, generation })
         return state(projectId, currentProject, null)
@@ -196,14 +213,14 @@ export function createOnAirCsvService(
     try { return findProject(projectId) } catch { return undefined }
   }
 
-  function currentSourceError(projectId: string, source: string, filePrefix: string, includeWaitTitlesLocations: boolean, generation: number): OnAirState | null {
+  function currentSourceError(projectId: string, source: string, selectedSources: CsvSourceConfig[], generation: number): OnAirState | null {
     let currentProject: MosProject | undefined
     try { currentProject = findProject(projectId) } catch { return state(projectId, undefined, { code: 'SETTINGS_INVALID' }) }
     if (!currentProject) {
       snapshots.delete(projectId)
       return state(projectId, undefined, { code: 'PROJECT_NOT_FOUND' })
     }
-    if (currentProject.onAirCsv?.folderPath !== source || (currentProject.onAirCsv?.filePrefix ?? 'PA_') !== filePrefix || (currentProject.onAirCsv?.includeWaitTitlesLocations === true) !== includeWaitTitlesLocations || (generations.get(projectId) ?? 0) !== generation) {
+    if (currentProject.onAirCsv?.folderPath !== source || JSON.stringify(getSelectedSources(currentProject)) !== JSON.stringify(selectedSources) || (generations.get(projectId) ?? 0) !== generation) {
       snapshots.delete(projectId)
       return state(projectId, currentProject, { code: 'SOURCE_CHANGED' })
     }
@@ -212,6 +229,8 @@ export function createOnAirCsvService(
 
   return {
     listProjects,
+    listCsvFiles,
+    readCsvHeaders,
     getSnapshot(projectId) {
       let project: MosProject | undefined
       try { project = findProject(projectId) } catch { return state(projectId, undefined, { code: 'SETTINGS_INVALID' }) }
@@ -231,11 +250,10 @@ export function createOnAirCsvService(
       reconcileSources()
       if (!project.onAirCsv) return Promise.resolve(state(projectId, project, { code: 'NOT_CONFIGURED' }))
       const source = project.onAirCsv.folderPath
-      const filePrefix = project.onAirCsv.filePrefix ?? 'PA_'
-      const includeWaitTitlesLocations = project.onAirCsv.includeWaitTitlesLocations === true
+      const selectedSources = getSelectedSources(project)
       const generation = generations.get(projectId) ?? 0
       busyProjects.add(projectId)
-      const operation = loadSnapshot(projectId, source, filePrefix, includeWaitTitlesLocations, generation)
+      const operation = loadSnapshot(projectId, source, selectedSources, generation)
         .then(result => ({ ...result, busy: false }))
         .finally(() => {
           busyProjects.delete(projectId)
@@ -278,5 +296,19 @@ function isMissingFile(error: unknown): boolean {
 
 function sourceKey(project: MosProject): string | null {
   if (!project.onAirCsv) return null
-  return `${project.onAirCsv.folderPath}\0${project.onAirCsv.filePrefix ?? 'PA_'}\0${project.onAirCsv.includeWaitTitlesLocations === true}`
+  return `${project.onAirCsv.folderPath}\0${JSON.stringify(getSelectedSources(project))}`
+}
+
+function getSelectedSources(project: MosProject): CsvSourceConfig[] {
+  const sources = project.mappings.sections.flatMap(section => section.csvSource ? [{
+    kind: section.csvSource.kind === 'waitTitlesLocations' ? 'wait_titles_locations' as const : section.csvSource.kind,
+    fileName: section.csvSource.fileName.trim(),
+    ...(section.csvSource.columns && Object.keys(section.csvSource.columns).length ? { columns: section.csvSource.columns } : {}),
+  }] : [])
+  return [...new Map(sources.map(source => [JSON.stringify(source), source])).values()]
+}
+
+function validateFolderPath(value: unknown): string {
+  if (typeof value !== 'string' || !value.trim() || value.includes('\0') || !path.isAbsolute(value)) throw new Error('Invalid CSV folder path.')
+  return path.resolve(value)
 }

@@ -1,7 +1,7 @@
 import { emptyMosMappingConfig, validateMosMappings, type MosMappingConfig } from './mosMappings'
 import { validateMosInteractions, type MosInteractionRule } from './mosInteractions'
 import type { OnAirCsvSource } from '../onair/contracts'
-import { validateOnAirMappings, type OnAirDefaultTemplates, type OnAirGraphicMapping } from '../onair/mappings'
+import { validateOnAirMappings, type OnAirGraphicMapping } from '../onair/mappings'
 
 export const builtinTelejurnalProjectId = 'builtin-telejurnal'
 export const builtinRetrospectivaProjectId = 'builtin-retrospectiva'
@@ -32,7 +32,6 @@ export interface MosProject {
   interactions?: MosInteractionRule[]
   onAirCsv?: OnAirCsvSource
   onAirMappings?: OnAirGraphicMapping[]
-  onAirDefaultTemplates?: OnAirDefaultTemplates
   staticGraphics?: MosStaticGraphic[]
 }
 export interface MosProjectsConfig {
@@ -70,7 +69,6 @@ export function validateMosProjects(value: unknown): MosProjectsConfig {
     const mappings = validateMosMappings(raw.mappings, { allowEmptySources: true })
     const onAirCsv = raw.onAirCsv === undefined ? undefined : validateOnAirCsvSource(raw.onAirCsv)
     const onAirMappings = raw.onAirMappings === undefined ? undefined : validateOnAirMappings(raw.onAirMappings, mappings)
-    const onAirDefaultTemplates = raw.onAirDefaultTemplates === undefined ? undefined : validateOnAirDefaultTemplates(raw.onAirDefaultTemplates)
     const staticGraphics = raw.staticGraphics === undefined ? undefined : validateMosStaticGraphics(raw.staticGraphics, mappings)
     return {
       id: raw.id,
@@ -81,7 +79,6 @@ export function validateMosProjects(value: unknown): MosProjectsConfig {
       ...(raw.interactions === undefined ? {} : { interactions: validateMosInteractions(raw.interactions, mappings) }),
       ...(onAirCsv === undefined ? {} : { onAirCsv }),
       ...(onAirMappings === undefined ? {} : { onAirMappings }),
-      ...(onAirDefaultTemplates === undefined ? {} : { onAirDefaultTemplates }),
       ...(staticGraphics === undefined ? {} : { staticGraphics }),
     }
   })
@@ -124,37 +121,7 @@ export function validateOnAirCsvSource(value: unknown): OnAirCsvSource {
   if (!folderPath || folderPath.includes('\0') || !isAbsoluteDirectoryPath(folderPath)) {
     throw new Error('OnAir CSV folder path must be a nonempty absolute directory path.')
   }
-  if (value.includeWaitTitlesLocations !== undefined && typeof value.includeWaitTitlesLocations !== 'boolean') {
-    throw new Error('OnAir wait titles and locations file setting must be a boolean.')
-  }
-  if (value.filePrefix === undefined) return {
-    format: 'pa-csv', folderPath,
-    ...(value.includeWaitTitlesLocations === true ? { includeWaitTitlesLocations: true } : {}),
-  }
-  if (typeof value.filePrefix !== 'string') throw new Error('OnAir CSV file prefix must be a string.')
-  const filePrefix = value.filePrefix.trim()
-  if (!/^[A-Za-z0-9_-]{1,31}_$/.test(filePrefix)) {
-    throw new Error('OnAir CSV file prefix must contain only letters, numbers, underscores, or hyphens and end with an underscore.')
-  }
-  return {
-    format: 'pa-csv', folderPath, filePrefix,
-    ...(value.includeWaitTitlesLocations === true ? { includeWaitTitlesLocations: true } : {}),
-  }
-}
-
-export function validateOnAirDefaultTemplates(value: unknown): OnAirDefaultTemplates {
-  if (!isRecord(value)) throw new Error('Invalid OnAir default templates.')
-  const result: OnAirDefaultTemplates = {}
-  for (const kind of ['locations', 'phones'] as const) {
-    if (!(kind in value)) continue
-    if (typeof value[kind] !== 'string') throw new Error(`OnAir default template for ${kind} must be a string.`)
-    const template = value[kind].trim()
-    if (template) result[kind] = template
-  }
-  for (const key of Object.keys(value)) {
-    if (key !== 'locations' && key !== 'phones') throw new Error(`Unsupported OnAir default template kind: ${key}`)
-  }
-  return result
+  return { format: 'pa-csv', folderPath }
 }
 
 function isAbsoluteDirectoryPath(value: string): boolean {
@@ -204,6 +171,7 @@ export function duplicateMosProject(project: MosProject, name: string, createId:
       version: project.mappings.version,
       sections: project.mappings.sections.map(section => ({
         ...section,
+        ...(section.csvSource === undefined ? {} : { csvSource: { ...section.csvSource, ...(section.csvSource.columns === undefined ? {} : { columns: { ...section.csvSource.columns } }) } }),
         id: sectionIds.get(section.id)!,
         targets: section.targets.map(target => ({ ...target, id: targetIds.get(target.id)! })),
         sources: section.sources.map(source => ({
@@ -235,9 +203,6 @@ export function duplicateMosProject(project: MosProject, name: string, createId:
           ])),
         })),
       })),
-    }),
-    ...(project.onAirDefaultTemplates === undefined ? {} : {
-      onAirDefaultTemplates: { ...project.onAirDefaultTemplates },
     }),
     ...(project.staticGraphics === undefined ? {} : {
       staticGraphics: project.staticGraphics.map(graphic => ({

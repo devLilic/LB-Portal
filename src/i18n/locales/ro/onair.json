@@ -50,8 +50,6 @@
     "loading": "Se încarcă mapările salvate…",
     "templateMissing": "Fără template sursă",
     "sourceMissing": "Acest element CSV nu are o valoare pentru template-ul sursă.",
-    "templateImplicit": "Template implicit din proiect: {{template}}",
-    "templateImplicitBadge": "Fără template CSV · implicit: {{template}}",
     "unmapped": "Nu este configurată o mapare LiveBoard pentru acest template sursă.",
     "missingTemplate": "Secțiunea sau template-ul LiveBoard configurat nu mai există.",
     "section": "Secțiune",

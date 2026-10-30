@@ -63,7 +63,6 @@ const snapshot = (project, groupName, loadedAt) => ({
 const mosProject = (projectId, targetTemplate) => ({
   id: projectId, name: projectId, kind: 'standalone',
   mappings: { version: 1, sections: [{ id: 'qa-section', name: 'QA OnAir section', targets: [{ id: 'qa-target', template: targetTemplate }], resumePlayDelayMs: 0, sources: [] }] },
-  onAirDefaultTemplates: { locations: 'QA_Location_Default', phones: 'QA_Phone_Default' },
   onAirMappings: [
     { id: 'qa-map-title', kind: 'titles', sourceTemplate: '05_Titlu_Ultima_Ora', sectionId: 'qa-section', fields: [
       { id: 'qa-field-title', sourceField: 'Titlu', targetFields: { 'qa-target': ['F_TEXT'] } },
@@ -73,16 +72,8 @@ const mosProject = (projectId, targetTemplate) => ({
       { id: 'qa-field-name', sourceField: 'Nume', targetFields: { 'qa-target': ['F_NAME'] } },
       { id: 'qa-field-role', sourceField: 'Functie', targetFields: { 'qa-target': ['F_ROLE'] } },
     ] },
-    { id: 'qa-map-location-default', kind: 'locations', sourceTemplate: 'QA_Location_Default', sectionId: 'qa-section', fields: [
-      { id: 'qa-field-location-default', sourceField: 'Locatie', targetFields: { 'qa-target': ['F_LOCATION'] } },
-    ] },
     { id: 'qa-map-location-csv', kind: 'locations', sourceTemplate: '05_Titlu_Ultima_Ora', sectionId: 'qa-section', fields: [
       { id: 'qa-field-location', sourceField: 'Locatie', targetFields: { 'qa-target': ['F_LOCATION'] } },
-    ] },
-    { id: 'qa-map-phone', kind: 'phones', sourceTemplate: 'QA_Phone_Default', sectionId: 'qa-section', fields: [
-      { id: 'qa-field-phone-name', sourceField: 'Nume', targetFields: { 'qa-target': ['F_NAME'] } },
-      { id: 'qa-field-phone-role', sourceField: 'Functie', targetFields: { 'qa-target': ['F_ROLE'] } },
-      { id: 'qa-field-phone-image', sourceField: 'Image', targetFields: { 'qa-target': ['F_IMAGE'] } },
     ] },
   ],
 })
@@ -232,20 +223,13 @@ async function main() {
   await personItem.locator('.onair-mapping-preview summary').click()
   assert.equal(await personItem.locator('.onair-resolved-target dd').nth(1).innerText(), 'Analist invitat')
   const locationItem = page.locator('.onair-item').filter({ hasText: 'Republica Moldova' }).first()
-  assert.match(await locationItem.locator('.onair-template').innerText(), /CSV template missing.*QA_Location_Default/)
-  await locationItem.locator('.onair-mapping-preview summary').click()
-  await locationItem.getByText('Project default template: QA_Location_Default', { exact: true }).waitFor()
-  assert.equal(await locationItem.locator('.onair-resolved-target dd').first().innerText(), 'Chișinău\nRepublica Moldova')
+  assert.match(await locationItem.locator('.onair-template').innerText(), /Fără template sursă|No source template/)
   const locationOverride = page.locator('.onair-item').filter({ hasText: 'Bălți' }).first()
-  assert.equal(await locationOverride.locator('.onair-template').innerText(), '05_Titlu_Ultima_Ora', 'a CSV template should override the configured location default')
+  assert.equal(await locationOverride.locator('.onair-template').innerText(), '05_Titlu_Ultima_Ora', 'a CSV template should be used as the configured graphic template')
   await locationOverride.locator('.onair-mapping-preview summary').click()
   assert.equal(await locationOverride.locator('.onair-resolved-target dd').first().innerText(), 'Bălți')
   const phoneItem = page.locator('.onair-item').filter({ hasText: 'Intervenție telefonică' }).first()
-  assert.match(await phoneItem.locator('.onair-template').innerText(), /CSV template missing.*QA_Phone_Default/)
-  await phoneItem.locator('.onair-mapping-preview summary').click()
-  await phoneItem.getByText('Project default template: QA_Phone_Default', { exact: true }).waitFor()
-  assert.equal(await phoneItem.locator('.onair-resolved-target dd').nth(1).innerText(), 'Reporter')
-  assert.equal(await phoneItem.locator('.onair-resolved-target dd').nth(2).innerText(), 'C:\\assets\\phone\\reporter image.png')
+  assert.match(await phoneItem.locator('.onair-template').innerText(), /Fără template sursă|No source template/)
   const counts = await page.evaluate(() => ({ ...window.__onAirCalls }))
   assert.ok(counts.listProjects >= 1, 'OnAir should request the saved project list when it opens')
   assert.equal(counts.refresh, 0, 'opening OnAir must not refresh the CSV export')

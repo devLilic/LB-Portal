@@ -4,7 +4,7 @@
 
 OnAir este zona de lucru pentru operatori, alături de Consolă și Setări. Selectorul unic din bara OnAir alege proiectul ale cărui CSV-uri sunt consultate și proiectul care poate fi activat pentru execuție. Alegerea nu schimbă singură proiectul activ; operatorul apasă explicit „Activează proiectul”. Activarea nu trimite comenzi LiveBoard.
 
-În Setări, fiecare proiect poate salva o sursă `onAirCsv` opțională, cu formatul `pa-csv`, `folderPath`, `filePrefix` și opțiunea `includeWaitTitlesLocations`. Prefixul implicit este `PA_`; pentru un export diferit se poate introduce, de exemplu, `ES_`. Prefixul trebuie să se termine cu `_` și este aplicat celor patru exporturi standard. Fișierul combinat nu este citit implicit: bifa „Citește fișierul opțional Titlu și locație de așteptare” îl activează numai pentru proiectul editat. Configurațiile existente fără această opțiune o tratează ca dezactivată. La schimbarea prefixului, cheile `sourceTemplate` din mapările OnAir care încep cu prefixul anterior sunt rebazate la noul prefix; câmpurile și destinațiile mapării rămân neschimbate. Schimbarea folderului ori editarea prefixului modifică draftul; salvarea este explicită. Ștergerea căii dezactivează sursa. Configurațiile v2 existente și scrierile prin adaptorul v1 rămân compatibile; câmpurile lipsă sunt citite ca `PA_`. Copierea unui proiect copiază configurația sursei într-un obiect independent; datele deja încărcate nu se copiază.
+În Setări, proiectul salvează opțional folderul `onAirCsv.folderPath`. Pentru fiecare secțiune se poate alege o categorie grafică, un fișier CSV detectat în acel folder și coloana detectată care furnizează fiecare câmp semantic al categoriei. Antetele sunt citite în Electron main; UI nu cere tastarea numelor de coloane. Secțiunile fără sursă CSV sunt permise. Aplicația citește numai fișierele selectate de secțiuni și deduplică citirea când același fișier este folosit de mai multe secțiuni. Numele fișierelor și antetele nu sunt impuse de aplicație. Salvarea configurației nu citește fișierele; Refresh în OnAir le citește. Ștergerea folderului dezactivează sursa. Configurațiile v2 vechi fără sursă per secțiune rămân valide, însă nu mai declanșează citirea exporturilor până când secțiunile sunt configurate.
 
 Grupurile sunt prezentate în taburi. „Invitați (Platou)” este primul și selectat inițial; apoi urmează beta-urile în ordinea exportului. Dacă exportul nu are grup de invitați, interfața păstrează un tab gol pentru platou, fără să inventeze înregistrări în snapshot. Alegerea manuală a unui beta se păstrează la Refresh dacă grupul continuă să existe. Supratitlul este afișat deasupra titlului.
 
@@ -16,19 +16,21 @@ Lista lungă de titluri are propriul scroll vertical, limitat la spațiul dispon
 
 Folderul de pe calculatorul de dezvoltare pentru Punctul pe Azi este `C:\Projects\_CSV\PA\Export`. Calea este o setare locală a proiectului, nu o constantă de import și nu o cale implicită pentru celelalte proiecte.
 
-## Cele patru exporturi OnAir
+## Categorii grafice și coloane CSV
 
 | Fișier | Coloane necesare | Semnificație |
 | --- | --- | --- |
-| `{prefix}titles.csv` (implicit `PA_titles.csv`) | `Nr`, `Titlu`, `Supratitlu`, `Template` | Titluri în ordinea exportată, numerotate în interiorul grupului. |
-| `{prefix}persons.csv` (implicit `PA_persons.csv`) | `Sectiune`, `Nume`, `Functie`, `Template` | Persoane fără fotografie, grupate editorial. |
-| `{prefix}locations.csv` (implicit `PA_locations.csv`) | `Locatie` | Locațiile grupului INVITAȚI. |
-| `{prefix}phones.csv` (implicit `PA_phones.csv`) | `Nume`, `Functie`, `Image` | Intervenții telefonice din INVITAȚI: persoană și cale fotografie; nu numere telefonice. |
-| `{prefix}wait_titles_locations.csv` (numai când este bifat în setările proiectului; de exemplu `ES_wait_titles_locations.csv`) | `Titlu`, `Locatie`, `Template` | O singură grafică din INVITAȚI, cu titlul și locația de așteptare ca valori ale aceluiași template. Antetul conține un singur câmp `Template`. |
+| Categorie | Câmpuri semantice configurabile | Semnificație |
+| --- | --- | --- |
+| `titles` | `Nr`, `Titlu`, `Supratitlu`, `Template` | Titluri în ordinea exportată, numerotate în interiorul grupului. |
+| `persons` | `Sectiune`, `Nume`, `Functie`, `Template` | Persoane grupate editorial. |
+| `locations` | `Locatie`; opțional `Template` | Locațiile grupului INVITAȚI. |
+| `phones` | `Nume`, `Functie`, `Image`; opțional `Template` | Intervenții telefonice din INVITAȚI. |
+| `waitTitlesLocations` | `Titlu`, `Locatie`, `Template` | O singură grafică cu titlul și locația de așteptare. |
 
-Refresh folosește prefixul setat explicit pentru proiect și nu combină fișiere cu prefixe diferite chiar dacă sunt în același folder. Valorile `Template` din rânduri sunt păstrate exact. Mapările OnAir folosesc cheia `sourceTemplate` exactă; la schimbarea explicită a prefixului CSV, interfața actualizează cheile care foloseau prefixul configurat anterior. Numele fișierelor și template-urile rămân identificatori separați.
+Valorile de template din rânduri sunt păstrate exact. Mapările OnAir folosesc cheia `sourceTemplate` exactă. Numele fișierelor, numele coloanelor și template-urile sunt configurate și păstrate separat.
 
-Prefixul se aplică celor patru exporturi standard. Fișierul `wait_titles_locations.csv` este adăugat la citire numai când opțiunea este bifată explicit pentru proiectul respectiv; în caz contrar nu este căutat, verificat sau citit, chiar dacă există în folder. Când opțiunea este activă și fișierul lipsește, importul celor patru exporturi standard rămâne valid. În exportul combinat, template-ul comun este cheia unică pentru ambele valori: folosește antetul `Titlu;Locatie;Template` și câte un rând per grafică. Nu folosi coloane distincte `Template Titlu` și `Template Locatie`; grafica apare ca un singur element OnAir, iar maparea ei oferă câmpurile sursă `Titlu` și `Locatie`. Fișiere suplimentare precum `quickTitles.csv` rămân ignorate.
+Fiecare secțiune indică exact fișierul și asocierile dintre câmpurile categoriei și antetele CSV. Pot exista mai multe fișiere cu aceeași categorie; rândurile lor se reunesc în categoria graficii. Fișiere nealese nu sunt căutate, verificate sau citite. Pentru grafica combinată, template-ul comun este cheia unică pentru ambele valori; maparea oferă câmpurile `Titlu` și `Locatie`.
 
 Semantica a fost verificată în exportatorul csvEditor-PA (`paEntityExportMapper.ts`). Rândurile `--- ... ---` sunt markeri de grup în prima coloană a exporturilor de titluri/persoane. Titlurile și persoanele sunt liste independente; nu se corelează după poziție sau număr. Grupurile comune se reunesc după marker și se păstrează ordinea sursei, inclusiv duplicatele valide. Locațiile și intervențiile apar la INVITAȚI. Grupurile repetate nu trebuie comprimate accidental.
 
@@ -38,13 +40,13 @@ Importul folosește UTF-8 și delimitatorul `;`, cu suport pentru BOM, ghilimele
 
 Citirea CSV-urilor începe exclusiv la Refresh. Deschiderea OnAir, schimbarea proiectului și alegerea/salvarea folderului nu citesc exporturile. Snapshoturile sunt separate după ID-ul proiectului și rămân în memorie în sesiunea curentă, inclusiv la navigare. Repornirea aplicației cere un nou Refresh.
 
-Un snapshot se publică după citirea și validarea celor patru fișiere standard și, numai dacă este activat în setările proiectului, a fișierului combinat atunci când există. Când este activ și fișierul combinat lipsește, acesta este echivalent cu un CSV valid doar cu antet. O eroare de citire/parsare păstrează ultimul import reușit al aceleiași surse și este afișată alături de el. Schimbarea folderului, prefixului sau activării fișierului opțional invalidează datele sursei anterioare. Răspunsurile întârziate nu trebuie să publice date în alt proiect sau într-o sursă schimbată între timp.
+Un snapshot se publică după citirea și validarea tuturor fișierelor distincte selectate în secțiuni. Dacă nu este selectat niciun fișier, Refresh publică un snapshot gol fără acces la folder. O eroare de citire/parsare păstrează ultimul import reușit al aceleiași surse și este afișată alături de el. Schimbarea folderului, a unui nume de fișier, a categoriei sau a coloanelor invalidează snapshotul sursei anterioare. Răspunsurile întârziate nu trebuie să publice date în alt proiect sau într-o sursă schimbată între timp.
 
 Importatorul verifică metadatele fișierelor înainte și după citire și reia limitat operația dacă sursa se modifică. Exportatorul nu furnizează un identificator comun de lot sau un manifest tranzacțional: stabilitatea fișierelor reduce riscul de citire în timpul scrierii, dar nu dovedește că toate fișierele sunt din aceeași generație.
 
 ## Securitate și pregătirea pentru LiveBoard
 
-Filesystemul și parserul aparțin Electron main. Preload expune numai operații tipizate pentru lista proiectelor, alegerea folderului, snapshot, Refresh și PLAY/RESUME de element OnAir după ID de proiect. Main rezolvă calea din setările salvate și validează expeditorul IPC. Rendererul nu primește API Node sau citire arbitrară de fișiere. Fotografiile sunt deocamdată reprezentate prin calea text, fără încărcare de URL-uri din CSV.
+Filesystemul și parserul aparțin Electron main. Preload expune numai operații tipizate pentru lista proiectelor, alegerea folderului, listarea fișierelor CSV și citirea antetelor, snapshot, Refresh și PLAY/RESUME de element OnAir după ID de proiect. Main validează expeditorul IPC și limitează listarea la fișiere CSV, iar antetele sunt citite numai pentru un nume simplu aflat în folderul ales. Rendererul nu primește API Node sau citire arbitrară de fișiere. Fotografiile sunt deocamdată reprezentate prin calea text, fără încărcare de URL-uri din CSV.
 
 `Template` este cheia sursă a graficii, păstrată exact din CSV. În Setări → proiect → Mapări CSV OnAir, operatorul selectează un tip și template detectat în importul deja încărcat, alege secțiunea LiveBoard și configurează câmpurile pentru fiecare destinație A/B existentă. Fila este disponibilă numai pentru proiectele configurate în modul Fișiere CSV. Consultarea catalogului folosește numai memoria; exporturile se citesc în continuare exclusiv prin Refresh în OnAir. Nu se presupune că numele template-ului CSV este și numele contentului LiveBoard.
 
@@ -56,13 +58,23 @@ Fiecare element poate fi executat explicit cu PLAY și, cât timp este chiar ele
 
 PLAY folosește destinațiile A/B, câmpurile, propagarea datelor și întârzierile secțiunii configurate. Durata și modul de ieșire provin din sursa secțiunii al cărei template coincide exact cu template-ul OnAir efectiv; fără o astfel de sursă configurată, elementul este manual. Resume verifică în main că proiectul, sursa, bufferul activ și valorile bufferului corespund elementului cerut. Resume-ul manual este blocat pentru o grafică activă cu durată automată configurată. Aceste comenzi folosesc numai transportul TCP LBC al controllerului; nu schimbă contractul HTTP Plasma și nu introduc OSCon/OSC.
 
-Pentru locații și intervenții, proiectul poate configura `onAirDefaultTemplates: { locations?: string, phones?: string }` în setările sursei CSV. Aceste nume manuale se folosesc când înregistrarea nu furnizează un `Template` nevid. Un nume primit din CSV are prioritate și se păstrează exact. Parserul acceptă și coloana suplimentară `Template` la finalul antetului acestor exporturi, păstrând compatibilitatea cu fișierele vechi. Dacă lipsesc și valoarea CSV, și configurația implicită, se afișează un diagnostic explicit; nu se inventează nume.
-
-Template-ul efectiv este folosit atât în catalogul editorului, cât și în badge-ul elementului și în resolver. Înregistrările din snapshot păstrează valorile originale ale CSV-ului; modificarea template-ului implicit nu recitește fișierele și nu invalidează importul. Configurația implicită aparține proiectului și se copiază independent la duplicare.
+Template-ul trebuie furnizat de coloana `Template` pentru categoria respectivă. Nu există template implicit de proiect pentru locații sau intervenții telefonice.
 
 OnAir nu produce cereri HTTP către Plasma. Din selectorul unic OnAir se poate activa explicit orice proiect creat sau importat; schimbarea selecției singură nu activează proiectul. Dacă nu există niciun proiect activ, acțiunile de execuție așteaptă activarea unuia. Activarea folosește verificările runtime existente și nu trimite comenzi LiveBoard. Pentru PLAY/RESUME explicit, proiectul selectat în OnAir trebuie să fie și proiectul activ în LiveBoard. Butonul fiecărui element trimite către Electron main doar ID-ul proiectului, tipul/template-ul și valorile CSV, iar main revalidează maparea salvată și execută prin coada și controllerul LiveBoard existente, cu A/B, pauzele și regulile de durată configurate. În modul simulare comenzile nu folosesc socket; în modul TCP sunt trimise prin LBControl. Câmpurile destinație nu sunt acceptate de la renderer. Resume este permis numai pentru grafica acelui element, identificată prin template și valorile bufferului activ. Dacă în secțiune este activ alt element, PLAY rămâne disponibil pentru trecerea la destinația A/B următoare. Fiecare mapare OnAir își salvează separat modul de ieșire manual sau prin durată de template și durata. Ieșirea automată nu poate fi închisă manual din butonul OnAir. Contractul HTTP Plasma, autentificarea și CORS nu se schimbă. Nu se introduce OSCon/OSC.
 
 ## Verificare
+
+### Surse configurabile per secțiune — 27 octombrie 2026
+
+Setarea proiectului păstrează folderul de lucru; prefixul global, bifa pentru fișierul combinat și template-urile implicite pentru locații/intervenții au fost eliminate. Fiecare secțiune CSV indică opțional categoria graficii, fișierul ales din lista folderului și antetele detectate pentru câmpurile semantice ale categoriei. Unicitatea fișierelor se deduplică la Refresh, iar fișierele neselectate nu sunt inspectate. Secțiunile fără sursă produc liste goale. Configurațiile v2 vechi rămân valide, dar nu mai încarcă automat fișierele PA.
+
+Verificare: **32 teste OnAir/setări trecute**, `npx tsc --noEmit` și buildurile Vite pentru renderer/main/preload trecute. `node --check` pentru QA scripts a trecut. Proba browser Edge și proba Electron nu au pornit în acest mediu (`Process failed to launch`/Crashpad). Împachetarea NSIS a oprit la rezolvarea DNS `github.com` (`ENOTFOUND`), chiar cu distribuția Electron locală; nu s-a publicat și nu s-a creat release.
+
+### Selectare fișier și antete detectate — 27 octombrie 2026
+
+Editorul de surse per secțiune enumeră numai fișierele `.csv` din folderul proiectului. După selectarea fișierului, UI afișează antetele citite de Electron main ca opțiuni pentru câmpurile semantice ale categoriei. Nu mai cere tastarea numelui fișierului sau a antetelor. Maparea semantică a valorilor către câmpurile LiveBoard rămâne în fila separată **Mapări CSV OnAir**. Fișierele și antetele sunt citite de operații IPC înguste; rendererul nu primește acces direct la sistemul de fișiere.
+
+Verificare: `npx tsc --noEmit` a trecut după conectarea API-urilor listare fișiere/antete și a selecțiilor din editor. Testele automate nu au fost rulate în această intervenție.
 
 ### Corecție PLAY pentru nume și funcție — 22 octombrie 2026
 

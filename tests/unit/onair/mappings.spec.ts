@@ -13,7 +13,7 @@ import type { MosMappingConfig } from '../../../src/shared/settings/mosMappings'
 const mosMappings: MosMappingConfig = {
   version: 1,
   sections: [{
-    id: 'section-titles', name: 'Titluri', resumePlayDelayMs: 100,
+    id: 'section-titles', name: 'Titluri', csvSource: { kind:'titles',fileName:'titles.csv',columns:{Nr:'Nr',Titlu:'Titlu',Supratitlu:'Supratitlu',Template:'Template'} }, resumePlayDelayMs: 100,
     targets: [{ id: 'target-a', template: 'OUT-A' }, { id: 'target-b', template: 'OUT-B' }],
     sources: [{ id: 'mos-source', template: 'MOS-TITLE', exitMode: 'manual-resume', durationSeconds: 6, fields: [] }],
   }],
@@ -43,6 +43,7 @@ describe('OnAir graphic mapping validation', () => {
       persons: ['Nume', 'Functie'],
       locations: ['Locatie'],
       phones: ['Nume', 'Functie', 'Image'],
+      waitTitlesLocations: ['Titlu', 'Locatie'],
     })
   })
 
@@ -78,11 +79,17 @@ describe('OnAir graphic mapping validation', () => {
     expect(() => validateOnAirMappings(invalid, mosMappings)).toThrow(/Invalid OnAir mappings/)
   })
 
+  it('rejects mapping a graphic to a section configured for another CSV category', () => {
+    const person: OnAirGraphicMapping = { ...mapping, kind:'persons', sourceTemplate:'Person', fields:[] }
+    expect(getOnAirMappingIssues([person], mosMappings).map(issue=>issue.code)).toContain('invalidSectionSource')
+  })
+
   it('validates an optional second source field and text separator', () => {
     const combined: OnAirGraphicMapping = { ...mapping, kind: 'persons', fields: [{
       id: 'combined', sourceField: 'Nume', sourceField2: 'Functie', separator: ', ', targetFields: { 'target-a': ['PERSON'] },
     }] }
-    expect(getOnAirMappingIssues([combined], mosMappings)).toEqual([])
+    const personMappings = { ...mosMappings, sections: mosMappings.sections.map(section => ({ ...section, csvSource: {kind:'persons' as const,fileName:'people.csv',columns:{Sectiune:'Sectiune',Nume:'Nume',Functie:'Functie',Template:'Template'}} })) }
+    expect(getOnAirMappingIssues([combined], personMappings)).toEqual([])
     expect(getOnAirMappingIssues([{ ...combined, fields: [{ ...combined.fields[0]!, sourceField2: 'Unknown' }] }], mosMappings).map(issue => issue.code)).toContain('invalidSourceField')
     expect(getOnAirMappingIssues([{ ...combined, fields: [{ ...combined.fields[0]!, sourceField2: '' }] }], mosMappings).map(issue => issue.code)).toContain('invalidSourceField')
     expect(getOnAirMappingIssues([{ ...combined, fields: [{ ...combined.fields[0]!, sourceField2: 'Nume' }] }], mosMappings).map(issue => issue.code)).toContain('duplicateSourceField')
@@ -91,33 +98,10 @@ describe('OnAir graphic mapping validation', () => {
 })
 
 describe('OnAir graphic mapping resolution and project persistence', () => {
-  it('prefers exact CSV templates and applies only configured location/phone defaults', () => {
-    expect(getOnAirEffectiveTemplate('locations', ' PA-Loc ' , { locations: 'Fallback' })).toBe(' PA-Loc ')
-    expect(getOnAirEffectiveTemplate('locations', '', { locations: '  DEFAULT_LOC  ' })).toBe('DEFAULT_LOC')
-    expect(getOnAirEffectiveTemplate('phones', '', { phones: 'DEFAULT_PHONE' })).toBe('DEFAULT_PHONE')
-    expect(getOnAirEffectiveTemplate('titles', '', { locations: 'DEFAULT_LOC', phones: 'DEFAULT_PHONE' })).toBe('')
-    expect(getOnAirEffectiveTemplate('persons', '  ', { locations: 'DEFAULT_LOC', phones: 'DEFAULT_PHONE' })).toBe('')
-    expect(getOnAirEffectiveTemplate('locations', undefined as unknown as string, { locations: 'DEFAULT_LOC' })).toBe('DEFAULT_LOC')
-  })
-
-  it('resolves rows with blank CSV templates through explicit per-project location and phone defaults', () => {
-    const defaults = { locations: 'LOC_DEFAULT', phones: 'PHONE_DEFAULT' }
-    const location: OnAirGraphicMapping = {
-      id: 'location-map', kind: 'locations', sourceTemplate: 'LOC_DEFAULT', sectionId: 'section-titles',
-      fields: [{ id: 'location-field', sourceField: 'Locatie', targetFields: { 'target-a': ['LOCATION'] } }],
-    }
-    const phone: OnAirGraphicMapping = {
-      id: 'phone-map', kind: 'phones', sourceTemplate: 'PHONE_DEFAULT', sectionId: 'section-titles',
-      fields: [{ id: 'phone-field', sourceField: 'Image', targetFields: { 'target-b': ['IMAGE'] } }],
-    }
-    const configuredProject = { ...project([location, phone]), onAirDefaultTemplates: defaults }
-    expect(resolveOnAirGraphic('locations', '', { Locatie: 'Studio 1' }, configuredProject)).toMatchObject({
-      status: 'matched', sourceTemplate: 'LOC_DEFAULT', targets: [{ fields: { LOCATION: 'Studio 1' } }, {}],
-    })
-    expect(resolveOnAirGraphic('phones', '', { Image: '' }, configuredProject)).toMatchObject({
-      status: 'matched', sourceTemplate: 'PHONE_DEFAULT', targets: [{}, { fields: { IMAGE: '' } }],
-    })
-    expect(resolveOnAirGraphic('titles', '', { Titlu: 'Title' }, configuredProject)).toMatchObject({ status: 'missing-template' })
+  it('requires CSV rows to provide a template instead of a project fallback', () => {
+    expect(getOnAirEffectiveTemplate('locations', ' PA-Loc ')).toBe(' PA-Loc ')
+    expect(getOnAirEffectiveTemplate('locations', '')).toBe('')
+    expect(resolveOnAirGraphic('locations', '', { Locatie: 'Studio 1' }, project())).toMatchObject({ status: 'missing-template' })
   })
 
   it('fans one source field out to several destination fields and retains empty string values', () => {
@@ -198,34 +182,12 @@ describe('OnAir graphic mapping resolution and project persistence', () => {
     expect(validateMosProjects({ ...config, projects: [...config.projects, copy] }).projects.at(-1)?.onAirMappings).toEqual(copy.onAirMappings?.map(item => ({ ...item, exitMode: 'manual-resume', durationSeconds: 6 })))
   })
 
-  it('validates, trims, persists and independently duplicates per-project defaults', () => {
+  it('persists a per-section CSV source and duplicates it with the section', () => {
     const config = normalizeMosProjects(mosMappings)
-    const source = {
-      ...config.projects.find(candidate => candidate.id === config.activeProjectId)!,
-      onAirDefaultTemplates: { locations: '  LOC_DEFAULT  ', phones: ' PHONE_DEFAULT ' },
-    }
-    const configured = validateMosProjects({
-      ...config,
-      projects: config.projects.map(candidate => candidate.id === source.id ? source : candidate),
-    })
-    expect(configured.projects.find(candidate => candidate.id === source.id)?.onAirDefaultTemplates).toEqual({
-      locations: 'LOC_DEFAULT', phones: 'PHONE_DEFAULT',
-    })
-    const blank = validateMosProjects({
-      ...config,
-      projects: config.projects.map(candidate => candidate.id === source.id
-        ? { ...candidate, onAirDefaultTemplates: { locations: '  ', phones: '' } }
-        : candidate),
-    })
-    expect(blank.projects.find(candidate => candidate.id === source.id)?.onAirDefaultTemplates).toEqual({})
-    expect(() => validateMosProjects({
-      ...config,
-      projects: config.projects.map(candidate => candidate.id === source.id
-        ? { ...candidate, onAirDefaultTemplates: { titles: 'not-allowed' } }
-        : candidate),
-    })).toThrow(/Unsupported OnAir default template kind/)
-    const copy = duplicateMosProject(configured.projects.find(candidate => candidate.id === source.id)!, 'Copy', () => 'copy-id')
-    expect(copy.onAirDefaultTemplates).toEqual({ locations: 'LOC_DEFAULT', phones: 'PHONE_DEFAULT' })
-    expect(copy.onAirDefaultTemplates).not.toBe(source.onAirDefaultTemplates)
+    const source = config.projects.find(candidate => candidate.id === config.activeProjectId)!
+    expect(source.mappings.sections[0]?.csvSource?.kind).toBe('titles')
+    const copy = duplicateMosProject(source, 'Copy', () => 'copy-id')
+    expect(copy.mappings.sections[0]?.csvSource).toEqual(source.mappings.sections[0]?.csvSource)
+    expect(copy.mappings.sections[0]?.csvSource?.columns).not.toBe(source.mappings.sections[0]?.csvSource?.columns)
   })
 })

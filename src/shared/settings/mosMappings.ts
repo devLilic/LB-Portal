@@ -10,6 +10,12 @@ export interface MosMappingSection {
   resumePlayDelayMs: number
   dataPropagationDelayMs?: number
   sources: MosMappingSource[]
+  /** Section-specific CSV file and selected headers for each semantic field. Omit for sections without CSV input. */
+  csvSource?: {
+    kind: 'titles' | 'persons' | 'locations' | 'phones' | 'waitTitlesLocations'
+    fileName: string
+    columns?: Record<string, string>
+  }
 }
 
 export interface MosMappingTarget {
@@ -71,6 +77,22 @@ export function getMosMappingIssues(value: unknown, options:{allowEmptySources?:
     const section = rawSection
     addId(section.id, `${sp}.id`)
     if (typeof section.name !== 'string' || !section.name.trim()) issue('required', `${sp}.name`)
+    if (section.csvSource !== undefined) {
+      const csv = section.csvSource
+      if (!isRecord(csv) || !['titles', 'persons', 'locations', 'phones', 'waitTitlesLocations'].includes(String(csv.kind)) || typeof csv.fileName !== 'string' || !/^[^\\/:*?"<>|\0]+\.csv$/i.test(csv.fileName.trim()) || (csv.columns !== undefined && (!isRecord(csv.columns) || Object.values(csv.columns).some(value => typeof value !== 'string')))) issue('invalidStructure', `${sp}.csvSource`)
+      else if (isRecord(csv.columns)) {
+        const requiredCsvFields: Record<string, string[]> = {
+          titles: ['Nr', 'Titlu', 'Supratitlu', 'Template'],
+          persons: ['Sectiune', 'Nume', 'Functie', 'Template'],
+          locations: ['Locatie'],
+          phones: ['Nume', 'Functie', 'Image'],
+          waitTitlesLocations: ['Titlu', 'Locatie', 'Template'],
+        }
+        for (const field of requiredCsvFields[String(csv.kind)] ?? []) {
+          if (typeof csv.columns[field] !== 'string' || !csv.columns[field].trim()) issue('required', `${sp}.csvSource.columns.${field}`)
+        }
+      }
+    }
     if (!mosMappingResumeDelayChoices.includes(section.resumePlayDelayMs as typeof mosMappingResumeDelayChoices[number])) issue('invalidDelay', `${sp}.resumePlayDelayMs`)
     if (section.dataPropagationDelayMs !== undefined && !mosMappingDataPropagationDelayChoices.includes(section.dataPropagationDelayMs as typeof mosMappingDataPropagationDelayChoices[number])) issue('invalidDelay', `${sp}.dataPropagationDelayMs`)
     if (section.targets.length < 1 || section.targets.length > 2) issue('invalidStructure', `${sp}.targets`)

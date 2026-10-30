@@ -90,7 +90,7 @@ describe('OnAir source-only project settings', () => {
       const projectsWithOnAirMapping = {
         ...initial,
         projects: initial.projects.map(project => project.id === initial.activeProjectId
-          ? { ...project, onAirMappings, onAirDefaultTemplates: { locations: 'PA_Location' } }
+          ? { ...project, onAirMappings }
           : project),
       }
 

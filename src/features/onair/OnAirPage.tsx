@@ -3,7 +3,7 @@ import type {CSSProperties,KeyboardEvent as ReactKeyboardEvent,ReactNode} from '
 import {createPortal} from 'react-dom'
 import {useTranslation} from 'react-i18next'
 import type {OnAirError,OnAirGroup,OnAirProjectSummary,OnAirState} from '../../shared/onair/contracts'
-import {getOnAirEffectiveTemplate,resolveOnAirGraphic,type OnAirGraphicKind,type OnAirGraphicResolution} from '../../shared/onair/mappings'
+import {resolveOnAirGraphic,type OnAirGraphicKind,type OnAirGraphicResolution} from '../../shared/onair/mappings'
 import type {MosProject} from '../../shared/settings/mosProjects'
 import type {LiveBoardSnapshot} from '../../shared/liveboard/runtime'
 import './onair.css'
@@ -372,7 +372,6 @@ function MappedItem({itemId,kind,template,values,project,projectId,liveBoard,t,c
  const [sending,setSending]=useState(false)
  const [playbackResult,setPlaybackResult]=useState<'failed'|'queued'|'completed'|null>(null)
  const hasCsvTemplate=typeof template==='string'&&Boolean(template.trim())
- const effectiveTemplate=getOnAirEffectiveTemplate(kind,template,project?.onAirDefaultTemplates)
  const resolution:OnAirGraphicResolution|undefined=project?resolveOnAirGraphic(kind,template,values,project):undefined
  const section=resolution?.status==='matched'?liveBoard?.sections.find(candidate=>candidate.sectionId===resolution.section.id):undefined
  const runtimeFields=section?.buffers.find(buffer=>buffer.id===section.activeTargetId)?.fields
@@ -393,8 +392,8 @@ function MappedItem({itemId,kind,template,values,project,projectId,liveBoard,t,c
  }
  const playbackLabel=sending?t('playback.playing'):t(`playback.${action}`)
  const playbackTitle=disableReason?t(`playback.${disableReason}`):playbackResult?t(`playback.${playbackResult}`):playbackLabel
- const templateLabel=hasCsvTemplate?template:(effectiveTemplate?t('mappings.templateImplicitBadge',{template:effectiveTemplate}):t('mappings.templateMissing'))
- return <div className={`onair-item${isOnAir?' is-onair':''}${isSuspended?' is-suspended':''}${isNew?' is-new':''}${isFading?' is-fading':''}${selected?' is-selected':''}`} data-onair-item-id={itemId} role="group" tabIndex={0} aria-keyshortcuts="ArrowUp ArrowDown Space"><div className="onair-item-heading"><div className="onair-item-copy">{children}</div><div className="onair-item-actions">{isSuspended&&<span className="onair-suspended-badge">{t('playback.suspended')}</span>}<button className={`onair-playback${sending?' is-busy':''}`} type="button" disabled={Boolean(disableReason)} onClick={()=>void playItem()} aria-label={playbackLabel} title={playbackTitle} tabIndex={-1}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{action==='resume'?<><path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M18 3v3h-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="m9.5 8.5 6 3.5-6 3.5z"/></>:<path d="M8 5v14l11-7z"/>}</svg></button><span className={`onair-template${hasCsvTemplate?'':effectiveTemplate?' onair-template-implicit':' onair-template-missing'}`} title={hasCsvTemplate?template:(effectiveTemplate?t('mappings.templateImplicit',{template:effectiveTemplate}):t('mappings.templateMissing'))}>{templateLabel}</span></div></div>
+  const templateLabel=hasCsvTemplate?template:t('mappings.templateMissing')
+  return <div className={`onair-item${isOnAir?' is-onair':''}${isSuspended?' is-suspended':''}${isNew?' is-new':''}${isFading?' is-fading':''}${selected?' is-selected':''}`} data-onair-item-id={itemId} role="group" tabIndex={0} aria-keyshortcuts="ArrowUp ArrowDown Space"><div className="onair-item-heading"><div className="onair-item-copy">{children}</div><div className="onair-item-actions">{isSuspended&&<span className="onair-suspended-badge">{t('playback.suspended')}</span>}<button className={`onair-playback${sending?' is-busy':''}`} type="button" disabled={Boolean(disableReason)} onClick={()=>void playItem()} aria-label={playbackLabel} title={playbackTitle} tabIndex={-1}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{action==='resume'?<><path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M18 3v3h-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="m9.5 8.5 6 3.5-6 3.5z"/></>:<path d="M8 5v14l11-7z"/>}</svg></button><span className={`onair-template${hasCsvTemplate?'':' onair-template-missing'}`} title={hasCsvTemplate?template:t('mappings.templateMissing')}>{templateLabel}</span></div></div>
  </div>
 }
 

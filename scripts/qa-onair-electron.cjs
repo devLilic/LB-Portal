@@ -45,8 +45,8 @@ function makeFixtures(folder) {
     ';Daria Munteanu;Invitat;06_Persoana',
     ';Sorin Dima;Reporter;06_Persoana',
   ].join('\r\n') + '\r\n'
-  const locations = 'Locatie\r\nStudioul principal\r\n'
-  const phones = 'Nume;Functie;Image\r\nAna Ionescu;Prezentatoare;images/ana.png\r\n'
+  const locations = 'Locatie;Template\r\nStudioul principal;PA_Location\r\n'
+  const phones = 'Nume;Functie;Image;Template\r\nAna Ionescu;Prezentatoare;images/ana.png;PA_Phone\r\n'
   for (const [name, contents] of Object.entries({
     'PA_titles.csv': titles,
     'PA_persons.csv': persons,
@@ -109,6 +109,7 @@ function countItems(snapshot, field) {
 }
 
 function makeProjects(csvFolder) {
+  const csvSource = (kind, fileName, columns) => ({ kind, fileName, columns })
   return {
     version: 2,
     activeProjectId: 'builtin-telejurnal',
@@ -116,8 +117,10 @@ function makeProjects(csvFolder) {
       { id: 'builtin-telejurnal', name: 'Telejurnal', kind: 'telejurnal', mappings: { version: 1, sections: [] } },
       { id: 'builtin-retrospectiva', name: 'Retrospectiva săptămânii', kind: 'retrospectiva', mappings: { version: 1, sections: [] } },
       { id: 'qa-punctul-pe-azi', name: 'Punctul pe Azi', kind: 'standalone', mappings: { version: 1, sections: [
-        { id: 'qa-csv-section', name: 'CSV graphics', resumePlayDelayMs: 100, dataPropagationDelayMs: 250, targets: [{ id: 'qa-csv-a', template: 'PA_Title_A' }, { id: 'qa-csv-b', template: 'PA_Title_B' }], sources: [] },
-        { id: 'qa-location-section', name: 'CSV location', resumePlayDelayMs: 100, dataPropagationDelayMs: 250, targets: [{ id: 'qa-location-target', template: 'PA_Location' }], sources: [] },
+        { id: 'qa-csv-section', name: 'CSV graphics', resumePlayDelayMs: 100, dataPropagationDelayMs: 250, targets: [{ id: 'qa-csv-a', template: 'PA_Title_A' }, { id: 'qa-csv-b', template: 'PA_Title_B' }], sources: [], csvSource: csvSource('titles', 'PA_titles.csv', { Nr:'Nr', Titlu:'Titlu', Supratitlu:'Supratitlu', Template:'Template' }) },
+        { id: 'qa-location-section', name: 'CSV location', resumePlayDelayMs: 100, dataPropagationDelayMs: 250, targets: [{ id: 'qa-location-target', template: 'PA_Location' }], sources: [], csvSource: csvSource('locations', 'PA_locations.csv', { Locatie:'Locatie', Template:'Template' }) },
+        { id: 'qa-person-section', name: 'CSV persons', resumePlayDelayMs: 100, dataPropagationDelayMs: 250, targets: [{ id: 'qa-person-target', template: 'PA_Person' }], sources: [], csvSource: csvSource('persons', 'PA_persons.csv', { Sectiune:'Sectiune', Nume:'Nume', Functie:'Functie', Template:'Template' }) },
+        { id: 'qa-phone-section', name: 'CSV phones', resumePlayDelayMs: 100, dataPropagationDelayMs: 250, targets: [{ id: 'qa-phone-target', template: 'PA_Phone' }], sources: [], csvSource: csvSource('phones', 'PA_phones.csv', { Nume:'Nume', Functie:'Functie', Image:'Image', Template:'Template' }) },
       ] }, onAirCsv: { format: 'pa-csv', folderPath: csvFolder } },
     ],
   }
@@ -215,7 +218,6 @@ async function run() {
   await page.locator('.portal-nav button').nth(2).click()
   await page.getByRole('heading', { name: /Mapări MOS|MOS mappings/ }).waitFor()
   await page.locator('.mos-project-selector select').selectOption('qa-punctul-pe-azi')
-  await page.getByLabel(/Template implicit — Locații|Fallback template — Locations/).fill('PA_Location')
   await page.getByRole('button', { name: /Mapări CSV OnAir|OnAir CSV mappings/ }).click()
   await page.getByLabel(/Grafic CSV detectat|Detected CSV graphic/).selectOption(JSON.stringify(['titles', '05_Titlu']))
   await page.getByRole('button', { name: /Adaugă maparea|Add mapping/ }).click()
@@ -243,14 +245,13 @@ async function run() {
     const config = await window.settingsApi.getMosProjects()
     return {
       pa: config.projects.find(project => project.id === 'qa-punctul-pe-azi')?.onAirMappings,
-      defaults: config.projects.find(project => project.id === 'qa-punctul-pe-azi')?.onAirDefaultTemplates,
       console: config.projects.find(project => project.id === 'builtin-telejurnal')?.onAirMappings ?? [],
     }
   })
   check(persistedMapping.pa?.length === 2 && persistedMapping.pa.some(mapping => mapping.sourceTemplate === '05_Titlu') && persistedMapping.pa.some(mapping => mapping.kind === 'locations' && mapping.sourceTemplate === 'PA_Location'), 'saving OnAir graphic mappings should persist detected CSV templates to the selected project')
   check(persistedMapping.pa?.[0].fields[0].sourceField === 'Titlu' && persistedMapping.pa[0].fields[0].targetFields['qa-csv-a']?.[0] === 'TITLE_A' && persistedMapping.pa[0].fields[0].targetFields['qa-csv-a']?.[1] === 'TITLE_A_SECOND' && persistedMapping.pa[0].fields[0].targetFields['qa-csv-b']?.[0] === 'TITLE_B', 'OnAir field mappings should retain a multi-field destination and both LiveBoard targets')
   const persistedLocation = persistedMapping.pa?.find(mapping => mapping.kind === 'locations')
-  check(persistedMapping.defaults?.locations === 'PA_Location' && persistedLocation?.fields[0].sourceField === 'Locatie' && persistedLocation.fields[0].targetFields['qa-location-target']?.[0] === 'LOCATION', 'location fallback template and prepared Locatie field should persist per project')
+  check(persistedLocation?.fields[0].sourceField === 'Locatie' && persistedLocation.fields[0].targetFields['qa-location-target']?.[0] === 'LOCATION', 'prepared Locatie field should persist per project')
   check(persistedMapping.console.length === 0, 'saving the OnAir mapping must not change another project')
   await page.locator('.portal-nav button').nth(0).click()
   await page.locator('.portal-nav button').nth(2).click()
@@ -260,7 +261,7 @@ async function run() {
   check(await reopenedCard.count() === 1, 'reopening settings should display the saved CSV graphic mapping')
   check(await reopenedCard.locator('textarea').nth(0).inputValue() === 'TITLE_A\nTITLE_A_SECOND' && await reopenedCard.locator('textarea').nth(1).inputValue() === 'TITLE_B', 'reopened editor should restore destination field lists')
   const reopenedLocation = page.locator('.onair-mapping-card').filter({ hasText: 'PA_Location' })
-  check(await reopenedLocation.count() === 1 && await page.getByLabel(/Template implicit — Locații|Fallback template — Locations/).inputValue() === 'PA_Location', 'reopened settings should restore the location mapping and its project fallback')
+  check(await reopenedLocation.count() === 1, 'reopening settings should restore the location mapping')
   const screenshotDir = path.join(root, 'node_modules', '.cache', 'onair-qa')
   mkdirSync(screenshotDir, { recursive: true })
   const serializedDom = await page.locator('.onair-mappings').evaluate(element => {

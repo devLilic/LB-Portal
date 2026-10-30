@@ -10,9 +10,15 @@ import type { MosProjectsConfig } from '../../../src/shared/settings/mosProjects
 
 const tempDirs: string[] = []
 const services: ReturnType<typeof createOnAirCsvService>[] = []
-const names: OnAirCsvFileName[] = ['PA_titles.csv', 'PA_persons.csv', 'PA_locations.csv', 'PA_phones.csv']
+const names: OnAirCsvFileName[] = ['PA_titles.csv', 'PA_persons.csv', 'PA_locations.csv', 'PA_phones.csv', 'PA_wait_titles_locations.csv']
 const telejurnalProjectId = 'test-telejurnal-csv'
 const retrospectivaProjectId = 'test-retrospectiva-csv'
+const defaultColumns: Record<string, Record<string, string>> = {
+  titles: { Nr:'Nr', Titlu:'Titlu', Supratitlu:'Supratitlu', Template:'Template' },
+  persons: { Sectiune:'Sectiune', Nume:'Nume', Functie:'Functie', Template:'Template' },
+  locations: { Locatie:'Locatie', Template:'Template' },
+  phones: { Nume:'Nume', Functie:'Functie', Image:'Image', Template:'Template' },
+}
 
 afterEach(() => {
   while (services.length) services.pop()!.dispose()
@@ -48,8 +54,8 @@ function fixture() {
     version: 2,
     activeProjectId: telejurnalProjectId,
     projects: [
-      { id: telejurnalProjectId, name: 'Telejurnal test', kind: 'standalone', mode: 'csv', mappings: { version: 1, sections: [] }, onAirCsv: { format: 'pa-csv', folderPath: folder } },
-      { id: retrospectivaProjectId, name: 'Retrospectiva test', kind: 'standalone', mode: 'csv', mappings: { version: 1, sections: [] }, onAirCsv: { format: 'pa-csv', folderPath: otherFolder } },
+      { id: telejurnalProjectId, name: 'Telejurnal test', kind: 'standalone', mode: 'csv', mappings: { version: 1, sections: ['titles','persons','locations','phones'].map(source=>({id:`section-${source}`,name:source,targets:[{id:`target-${source}`,template:`OUT-${source}`}],resumePlayDelayMs:100,sources:[],csvSource:{kind:source as 'titles'|'persons'|'locations'|'phones',fileName:`PA_${source}.csv`,columns:defaultColumns[source]!}})) }, onAirCsv: { format: 'pa-csv', folderPath: folder } },
+      { id: retrospectivaProjectId, name: 'Retrospectiva test', kind: 'standalone', mode: 'csv', mappings: { version: 1, sections: [{ id:'section-titles', name:'titles', targets:[{id:'target-titles',template:'OUT'}], resumePlayDelayMs:100, sources:[], csvSource:{kind:'titles',fileName:'PA_titles.csv',columns:defaultColumns.titles!} }] }, onAirCsv: { format: 'pa-csv', folderPath: otherFolder } },
     ],
   }
   store.setSetting('mosMappings', config)
@@ -72,7 +78,7 @@ describe('OnAir PA CSV parsing', () => {
   it('accepts BOM, quoted semicolons, escaped quotes, multiline values, and retains value whitespace/order', () => {
     const csv = '\uFEFFNr;Titlu;Supratitlu;Template\r\n1;"A; B";"say ""hello""\r\nagain"; T  \r\n'
     const rows = parseOnAirCsvFile('PA_titles.csv', Buffer.from(csv, 'utf8'))
-    expect(rows).toEqual([{ values: ['1', 'A; B', 'say "hello"\r\nagain', ' T  '], record: 2, line: 2 }])
+    expect(rows).toEqual([{ file: 'PA_titles.csv', values: ['1', 'A; B', 'say "hello"\r\nagain', ' T  '], record: 2, line: 2 }])
   })
 
   it('accepts headers-only files and reports a missing or malformed header with file and record', () => {
@@ -225,5 +231,57 @@ describe('OnAir PA CSV service', () => {
     expect(secondResult.snapshot).toEqual(firstResult.snapshot)
     expect(reads).toBe(4)
     expect(firstResult.busy).toBe(false)
+  })
+
+  it('reads only CSV files selected by sections and accepts sections with no CSV source', async () => {
+    const { folder, store } = fixture()
+    const config = store.getSetting('mosMappings') as MosProjectsConfig
+    store.setSetting('mosMappings', { ...config, projects: config.projects.map(project => project.id === telejurnalProjectId ? {
+      ...project,
+      mappings: { version: 1, sections: [
+        { id: 'titles-only', name: 'Titluri', targets: [{ id: 'target', template: 'OUT' }], resumePlayDelayMs: 100, sources: [], csvSource: { kind:'titles', fileName:'PA_titles.csv', columns:defaultColumns.titles! } },
+        { id: 'manual', name: 'Fără sursă', targets: [{ id: 'target-manual', template: 'MANUAL' }], resumePlayDelayMs: 100, sources: [] },
+      ] },
+    } : project) })
+    const readPaths: string[] = []
+    const fs = await import('node:fs')
+    const service = makeService(path.join(path.dirname(folder), 'settings'), store, {
+      stat: async filePath => { readPaths.push(path.basename(filePath)); return fs.statSync(filePath) },
+      readFile: async filePath => { readPaths.push(path.basename(filePath)); return readFileSync(filePath) },
+    })
+    const result = await service.refresh(telejurnalProjectId)
+    expect(result.error).toBeNull()
+    expect(result.snapshot?.groups[0]?.titles[0]?.title).toBe('Titlu A')
+    expect(readPaths).toEqual(['PA_titles.csv','PA_titles.csv','PA_titles.csv'])
+  })
+
+  it('publishes an empty snapshot without touching the folder when no section has a CSV source', async () => {
+    const { folder, store } = fixture()
+    const config = store.getSetting('mosMappings') as MosProjectsConfig
+    store.setSetting('mosMappings', { ...config, projects: config.projects.map(project => project.id === telejurnalProjectId ? {
+      ...project,
+      mappings: { version: 1, sections: [{ id:'manual', name:'Manual', targets:[{id:'target',template:'OUT'}], resumePlayDelayMs:100, sources:[] }] },
+    } : project) })
+    const service = makeService(path.join(path.dirname(folder), 'settings'), store, {
+      stat: async () => { throw new Error('unselected CSV should not be inspected') },
+      readFile: async () => { throw new Error('unselected CSV should not be read') },
+    })
+    const result = await service.refresh(telejurnalProjectId)
+    expect(result).toMatchObject({ error:null, snapshot:{ groups:[] } })
+  })
+
+  it('loads a configured filename and maps custom CSV headers to title fields', async () => {
+    const { folder, store } = fixture()
+    const fileName = 'editorial-titles.csv'
+    writeFileSync(path.join(folder, fileName), 'Poziție;Poveste;Supratema;Grafică\n01;Titlu personalizat;SUPRA;TITLU_X\n', 'utf8')
+    const config = store.getSetting('mosMappings') as MosProjectsConfig
+    store.setSetting('mosMappings', { ...config, projects: config.projects.map(project => project.id === telejurnalProjectId ? {
+      ...project,
+      mappings: { version: 1, sections: [{ id:'custom-title', name:'Titluri', targets:[{id:'target',template:'OUT'}], resumePlayDelayMs:100, sources:[], csvSource:{kind:'titles',fileName,columns:{Nr:'Poziție',Titlu:'Poveste',Supratitlu:'Supratema',Template:'Grafică'}} }] },
+    } : project) })
+    const service = makeService(path.join(path.dirname(folder), 'settings'), store)
+    const result = await service.refresh(telejurnalProjectId)
+    expect(result.error).toBeNull()
+    expect(result.snapshot?.groups[0]?.titles[0]).toMatchObject({ nr:'01', title:'Titlu personalizat', supratitle:'SUPRA', template:'TITLU_X', source:{file:fileName} })
   })
 })

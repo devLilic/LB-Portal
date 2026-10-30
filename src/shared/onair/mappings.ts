@@ -1,7 +1,6 @@
 import type { MosMappingConfig } from '../settings/mosMappings'
 
 export type OnAirGraphicKind = 'titles' | 'persons' | 'locations' | 'phones' | 'waitTitlesLocations'
-export type OnAirDefaultTemplates = Partial<Record<'locations' | 'phones', string>>
 
 export interface OnAirGraphicFieldMapping {
   id: string
@@ -36,15 +35,8 @@ export const onAirSourceFields: Record<OnAirGraphicKind, readonly string[]> = {
   waitTitlesLocations: ['Titlu', 'Locatie'],
 }
 
-export function getOnAirEffectiveTemplate(
-  kind: OnAirGraphicKind,
-  sourceTemplate: string,
-  defaults?: OnAirDefaultTemplates,
-): string {
-  if (typeof sourceTemplate === 'string' && sourceTemplate.trim()) return sourceTemplate
-  if (kind !== 'locations' && kind !== 'phones') return ''
-  const configuredDefault = defaults?.[kind]
-  return typeof configuredDefault === 'string' ? configuredDefault.trim() : ''
+export function getOnAirEffectiveTemplate(_kind: OnAirGraphicKind, sourceTemplate: string): string {
+  return typeof sourceTemplate === 'string' ? sourceTemplate : ''
 }
 
 export type OnAirGraphicResolution =
@@ -86,6 +78,7 @@ export function getOnAirMappingIssues(value: unknown, mappings: MosMappingConfig
 
     const section = typeof mapping.sectionId === 'string' ? sectionById.get(mapping.sectionId) : undefined
     if (typeof mapping.sectionId !== 'string' || !section) issue('invalidSection', `${base}.sectionId`)
+    else if (kind && section.csvSource && section.csvSource.kind !== kind) issue('invalidSectionSource', `${base}.sectionId`)
     const targetIds = new Set(section?.targets.map(target => target.id) ?? [])
     const usedDestinations = new Map<string, Set<string>>()
 
@@ -149,9 +142,9 @@ export function resolveOnAirGraphic(
   kind: OnAirGraphicKind,
   sourceTemplate: string,
   values: Record<string, string>,
-  project: { mappings: MosMappingConfig; onAirMappings?: OnAirGraphicMapping[]; onAirDefaultTemplates?: OnAirDefaultTemplates },
+  project: { mappings: MosMappingConfig; onAirMappings?: OnAirGraphicMapping[] },
 ): OnAirGraphicResolution {
-  const effectiveTemplate = getOnAirEffectiveTemplate(kind, sourceTemplate, project.onAirDefaultTemplates)
+  const effectiveTemplate = getOnAirEffectiveTemplate(kind, sourceTemplate)
   if (!effectiveTemplate) return { status: 'missing-template', kind, sourceTemplate: effectiveTemplate }
   const graphicMapping = project.onAirMappings?.find(mapping => mapping.kind === kind && mapping.sourceTemplate === effectiveTemplate)
   if (!graphicMapping) return { status: 'unmapped', kind, sourceTemplate: effectiveTemplate }

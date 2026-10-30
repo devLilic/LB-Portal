@@ -19,12 +19,12 @@ export default function OnAirMappingsEditor({project,t,onChange}:{project:MosPro
   const templates:Record<OnAirGraphicKind,string[]>={
    titles:projectSnapshot?.groups.flatMap(group=>group.titles.map(row=>row.template))??[],
    persons:projectSnapshot?.groups.flatMap(group=>group.persons.map(row=>row.template))??[],
-   locations:projectSnapshot?.groups.flatMap(group=>group.locations.map(row=>getOnAirEffectiveTemplate('locations',row.template,project.onAirDefaultTemplates)))??[],
-   phones:projectSnapshot?.groups.flatMap(group=>group.phones.map(row=>getOnAirEffectiveTemplate('phones',row.template,project.onAirDefaultTemplates)))??[],
+   locations:projectSnapshot?.groups.flatMap(group=>group.locations.map(row=>getOnAirEffectiveTemplate('locations',row.template)))??[],
+   phones:projectSnapshot?.groups.flatMap(group=>group.phones.map(row=>getOnAirEffectiveTemplate('phones',row.template)))??[],
    waitTitlesLocations:projectSnapshot?.groups.flatMap(group=>group.waitTitleLocations.map(row=>row.template))??[],
   }
   return kinds.flatMap(kind=>[...new Set(templates[kind].filter(template=>template.trim()))].map(template=>({kind,template})))
- },[projectSnapshot,project.onAirDefaultTemplates])
+ },[projectSnapshot])
  const mappings=project.onAirMappings??[]
  const issues=getOnAirMappingIssues(mappings,project.mappings)
  const update=(id:string,fn:(value:OnAirGraphicMapping)=>OnAirGraphicMapping)=>onChange(mappings.map(item=>item.id===id?fn(item):item))
@@ -42,7 +42,7 @@ export default function OnAirMappingsEditor({project,t,onChange}:{project:MosPro
    {issues.filter(issue=>issue.path.startsWith(`onAirMappings[${index}]`)).map((issue,n)=><p className="onair-mapping-issue" role="alert" key={`${issue.path}-${n}`}>{t(`mos.onAirMappings.validation.${issue.code}`,{defaultValue:t('mos.validation.invalidStructure')})}</p>)}
    <div className="mos-source-options onair-mapping-playback"><label>{t('mos.exitMode')}<select value={mapping.exitMode??'manual-resume'} onChange={event=>update(mapping.id,value=>({...value,exitMode:event.target.value as NonNullable<OnAirGraphicMapping['exitMode']>}))}><option value="manual-resume">{t('mos.manualResume')}</option><option value="template-duration">{t('mos.templateDuration')}</option></select></label>{(mapping.exitMode??'manual-resume')==='template-duration'&&<label>{t('mos.duration')}<input type="number" min="0.01" step="any" value={mapping.durationSeconds??6} onChange={event=>update(mapping.id,value=>({...value,durationSeconds:Number(event.target.value)}))}/></label>}</div>
    <p className="onair-mapping-playback-help">{t('mos.onAirMappings.playbackHelp')}</p>
-   <label>{t('mos.onAirMappings.section')}<select value={mapping.sectionId} onChange={event=>update(mapping.id,value=>({...value,sectionId:event.target.value,fields:value.fields.map(field=>({...field,targetFields:{}}))}))}><option value="">{t('mos.onAirMappings.chooseSection')}</option>{project.mappings.sections.map(item=><option key={item.id} value={item.id}>{item.name||t('mos.unnamed')}</option>)}</select></label>
+  <label>{t('mos.onAirMappings.section')}<select value={mapping.sectionId} onChange={event=>update(mapping.id,value=>({...value,sectionId:event.target.value,fields:value.fields.map(field=>({...field,targetFields:{}}))}))}><option value="">{t('mos.onAirMappings.chooseSection')}</option>{project.mappings.sections.filter(item=>item.csvSource?.kind===mapping.kind).map(item=><option key={item.id} value={item.id}>{item.name||t('mos.unnamed')}</option>)}</select></label>
    {!section&&<p className="onair-mapping-empty">{t('mos.onAirMappings.noSection')}</p>}
    {section&&<><div className="onair-mapping-targets"><strong>{t('mos.onAirMappings.targets')}</strong>{section.targets.map(target=><span key={target.id}>{target.template||t('mos.target')}</span>)}</div>
     <div className="onair-field-list">{mapping.fields.map(field=><div className={`onair-field-row ${section.targets.length===1?'single-target':'paired-targets'} ${field.sourceField2!==undefined?'has-second-source':''}`} key={field.id}>

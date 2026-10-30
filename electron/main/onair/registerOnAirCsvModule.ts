@@ -20,6 +20,14 @@ export function registerOnAirCsvModule(context: MainModuleContext) {
     validateSender(event, context)
     return service.listProjects()
   })
+  ipcMain.handle(onAirInvokeChannels.listCsvFiles, (event, folderPath: unknown) => {
+    validateSender(event, context)
+    return service.listCsvFiles(validateFolderPath(folderPath))
+  })
+  ipcMain.handle(onAirInvokeChannels.readCsvHeaders, (event, folderPath: unknown, fileName: unknown) => {
+    validateSender(event, context)
+    return service.readCsvHeaders(validateFolderPath(folderPath), validateCsvFileName(fileName))
+  })
   ipcMain.handle(onAirInvokeChannels.chooseFolder, async event => {
     validateSender(event, context)
     const window = context.getMainWindow()
@@ -38,6 +46,16 @@ export function registerOnAirCsvModule(context: MainModuleContext) {
     validateSender(event, context)
     return service.refresh(validateProjectId(projectId))
   })
+}
+
+function validateFolderPath(value: unknown): string {
+  if (typeof value !== 'string' || !value.trim() || value.includes('\0') || !path.isAbsolute(value)) throw new Error('Invalid CSV folder path.')
+  return path.resolve(value)
+}
+
+function validateCsvFileName(value: unknown): string {
+  if (typeof value !== 'string' || path.basename(value) !== value || !/^[^\\/:*?"<>|\0]+\.csv$/i.test(value)) throw new Error('Invalid CSV filename.')
+  return value
 }
 
 function validateProjectId(value: unknown): string {

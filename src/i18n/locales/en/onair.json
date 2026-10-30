@@ -50,8 +50,6 @@
     "loading": "Loading saved mappings…",
     "templateMissing": "No source template",
     "sourceMissing": "This CSV item has no source template value.",
-    "templateImplicit": "Project default template: {{template}}",
-    "templateImplicitBadge": "CSV template missing · default: {{template}}",
     "unmapped": "No LiveBoard mapping is configured for this source template.",
     "missingTemplate": "The configured LiveBoard section or target is missing.",
     "section": "Section",

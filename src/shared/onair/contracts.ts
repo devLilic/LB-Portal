@@ -1,13 +1,11 @@
 import type { MosProjectKind } from '../settings/mosProjects'
 import type { LiveBoardExecutionReport } from '../liveboard/runtime'
 import type { OnAirGraphicKind } from './mappings'
-export type { OnAirDefaultTemplates, OnAirGraphicFieldMapping, OnAirGraphicKind, OnAirGraphicMapping, OnAirGraphicMappingIssue, OnAirGraphicResolution } from './mappings'
+export type { OnAirGraphicFieldMapping, OnAirGraphicKind, OnAirGraphicMapping, OnAirGraphicMappingIssue, OnAirGraphicResolution } from './mappings'
 
 export interface OnAirCsvSource {
   format: 'pa-csv'
   folderPath: string
-  filePrefix?: string
-  includeWaitTitlesLocations?: boolean
 }
 
 export interface OnAirProjectSummary {
@@ -15,6 +13,11 @@ export interface OnAirProjectSummary {
   name: string
   kind: MosProjectKind
   folderPath: string | null
+}
+
+export interface OnAirCsvFileInfo {
+  fileName: string
+  columns: string[]
 }
 
 export interface OnAirItemSource {
@@ -124,6 +127,8 @@ export interface StaticProjectGraphicPlaybackResult { graphicId: string; executi
 
 export interface OnAirApi {
   listProjects(): Promise<OnAirProjectSummary[]>
+  listCsvFiles(folderPath: string): Promise<string[]>
+  readCsvHeaders(folderPath: string, fileName: string): Promise<string[]>
   chooseFolder(): Promise<string | null>
   getSnapshot(projectId: string): Promise<OnAirState>
   refresh(projectId: string): Promise<OnAirState>
@@ -133,6 +138,8 @@ export interface OnAirApi {
 
 export const onAirInvokeChannels = {
   listProjects: 'onair:list-projects',
+  listCsvFiles: 'onair:list-csv-files',
+  readCsvHeaders: 'onair:read-csv-headers',
   chooseFolder: 'onair:choose-folder',
   getSnapshot: 'onair:get-snapshot',
   refresh: 'onair:refresh',
