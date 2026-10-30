@@ -35,6 +35,8 @@ export default function OnAirPage({selectedProjectId,onSelectedProjectIdChange,c
  const [newItemIds,setNewItemIds]=useState<Set<string>>(()=>new Set())
  const [fadingItemIds,setFadingItemIds]=useState<Set<string>>(()=>new Set())
  const [selectedItemId,setSelectedItemId]=useState<string|null>(null)
+ const titleNumberBuffer=useRef('')
+ const titleNumberTimer=useRef<number|undefined>(undefined)
  const newItemTimeouts=useRef(new Map<string,{fade:number;remove:number}>())
  const sequence=useRef(0)
  const mounted=useRef(false)
@@ -242,8 +244,12 @@ export default function OnAirPage({selectedProjectId,onSelectedProjectIdChange,c
   tabRefs.current[nextIndex]?.focus()
  }
 
+ useEffect(()=>()=>{if(titleNumberTimer.current!==undefined)window.clearTimeout(titleNumberTimer.current)},[])
+
  useEffect(()=>{
   if(!activeTab)return
+  titleNumberBuffer.current=''
+  if(titleNumberTimer.current!==undefined)window.clearTimeout(titleNumberTimer.current)
   const items=Array.from(document.querySelectorAll<HTMLElement>('.onair-tabpanel .onair-item'))
   const item=items[0]
   setSelectedItemId(item?.dataset.onairItemId??null)
@@ -254,12 +260,33 @@ export default function OnAirPage({selectedProjectId,onSelectedProjectIdChange,c
    const isVertical=event.key==='ArrowDown'||event.key==='ArrowUp'
    const isHorizontal=event.key==='ArrowRight'||event.key==='ArrowLeft'
    const isSpace=event.key===' '||event.key==='Spacebar'
-   if(!isVertical&&!isHorizontal&&!isSpace)return
+   const isDigit=/^\d$/.test(event.key)
+   if(!isVertical&&!isHorizontal&&!isSpace&&!isDigit)return
    const target=event.target instanceof HTMLElement?event.target:null
    if(target?.closest('input,select,textarea,button,[role="tab"],[contenteditable="true"]'))return
    if(target&&target!==document.body&&!target.closest('.onair-page'))return
    const items=Array.from(document.querySelectorAll<HTMLElement>('.onair-tabpanel .onair-item'))
    if(!items.length)return
+   if(isDigit){
+    if(titleNumberBuffer.current.length>=2)return
+    const nextNumber=titleNumberBuffer.current+event.key
+    titleNumberBuffer.current=nextNumber
+    if(titleNumberTimer.current!==undefined)window.clearTimeout(titleNumberTimer.current)
+    titleNumberTimer.current=window.setTimeout(()=>{titleNumberBuffer.current=''},850)
+    const wantedNumber=String(Number(nextNumber))
+    const titleItems=Array.from(document.querySelectorAll<HTMLElement>('.onair-tabpanel .onair-item[data-onair-item-number]'))
+    const match=titleItems.find(item=>String(Number(item.dataset.onairItemNumber))===wantedNumber)
+    if(match){
+     event.preventDefault()
+     setSelectedItemId(match.dataset.onairItemId??null)
+     match.focus()
+    }
+    return
+   }
+   if(isSpace&&titleNumberBuffer.current){
+    titleNumberBuffer.current=''
+    if(titleNumberTimer.current!==undefined)window.clearTimeout(titleNumberTimer.current)
+   }
    const focusedItem=target?.closest<HTMLElement>('.onair-item')
    const currentItem=focusedItem??items.find(item=>item.dataset.onairItemId===selectedItemId)??items[0]
    if(isVertical){
@@ -356,7 +383,7 @@ function GroupPanel({group,kind,description,t,project,projectId,liveBoard,newIte
  return <article className={`onair-group onair-group-${group.kind}`}>
   {group.kind!=='invited'&&<header className="onair-group-heading"><div>{group.kind==='beta'?<span className="onair-group-kind">{description||group.name||t('unnamedGroup')}</span>:<><span className="onair-group-kind">{t(`groupKinds.${group.kind}`)}</span><h3>{description||group.name||t('unnamedGroup')}</h3></>}</div><span className="onair-group-total">{group.titles.length+group.persons.length+group.locations.length+group.phones.length+group.waitTitleLocations.length}</span></header>}
   <div className="onair-group-columns">
-   <section className="onair-list-block onair-titles-block"><h4>{t('sections.titles')} <small>{group.titles.length}</small></h4>{group.titles.length?group.titles.map(item=><MappedItem key={item.id} itemId={item.id} kind="titles" template={item.template} values={{Titlu:item.title,Supratitlu:item.supratitle}} project={project} projectId={projectId} liveBoard={liveBoard} t={t} isNew={newItemIds.has(item.id)} isFading={fadingItemIds.has(item.id)} selected={selectedItemId===item.id} onNewItemHandled={onNewItemHandled}><div className={`onair-title-copy${item.supratitle?' has-supertitle':''}`}><span className="onair-title-number">{item.nr}</span>{item.supratitle&&<p className="onair-supertitle">{item.supratitle}</p>}<strong>{item.title||t('emptyValue')}</strong></div></MappedItem>):<p className="onair-none">{t('none')}</p>}</section>
+   <section className="onair-list-block onair-titles-block"><h4>{t('sections.titles')} <small>{group.titles.length}</small></h4>{group.titles.length?group.titles.map(item=><MappedItem key={item.id} itemId={item.id} itemNumber={item.nr} kind="titles" template={item.template} values={{Titlu:item.title,Supratitlu:item.supratitle}} project={project} projectId={projectId} liveBoard={liveBoard} t={t} isNew={newItemIds.has(item.id)} isFading={fadingItemIds.has(item.id)} selected={selectedItemId===item.id} onNewItemHandled={onNewItemHandled}><div className={`onair-title-copy${item.supratitle?' has-supertitle':''}`}><span className="onair-title-number">{item.nr}</span>{item.supratitle&&<p className="onair-supertitle">{item.supratitle}</p>}<strong>{item.title||t('emptyValue')}</strong></div></MappedItem>):<p className="onair-none">{t('none')}</p>}</section>
    <div className="onair-right-column"><section className="onair-list-block"><h4>{t('sections.persons')} <small>{group.persons.length}</small></h4>{group.persons.length?group.persons.map(item=><MappedItem key={item.id} itemId={item.id} kind="persons" template={item.template} values={{Nume:item.name,Functie:item.role}} project={project} projectId={projectId} liveBoard={liveBoard} t={t} isNew={newItemIds.has(item.id)} isFading={fadingItemIds.has(item.id)} selected={selectedItemId===item.id} onNewItemHandled={onNewItemHandled}><div><strong className="onair-preserved-text">{item.name||t('emptyValue')}</strong>{item.role&&<p className="onair-secondary-text">{item.role}</p>}</div></MappedItem>):<p className="onair-none">{t('none')}</p>}</section>
   {(group.locations.length>0||group.phones.length>0||group.waitTitleLocations.length>0)&&<div className="onair-group-extra">
    {group.locations.length>0&&<section className="onair-list-block"><h4>{t('sections.locations')} <small>{group.locations.length}</small></h4>{group.locations.map(item=><MappedItem key={item.id} itemId={item.id} kind="locations" template={item.template} values={{Locatie:item.location}} project={project} projectId={projectId} liveBoard={liveBoard} t={t} isNew={newItemIds.has(item.id)} isFading={fadingItemIds.has(item.id)} selected={selectedItemId===item.id} onNewItemHandled={onNewItemHandled}><p className="onair-preserved-text">{item.location||t('emptyValue')}</p></MappedItem>)}</section>}
@@ -368,7 +395,7 @@ function GroupPanel({group,kind,description,t,project,projectId,liveBoard,newIte
  </article>
 }
 
-function MappedItem({itemId,kind,template,values,project,projectId,liveBoard,t,children,isNew=false,isFading=false,selected=false,onNewItemHandled}:{itemId:string;kind:OnAirGraphicKind;template:string;values:Record<string,string>;project:MosProject|null;projectId:string|null;liveBoard:LiveBoardSnapshot|null;t:(key:string,options?:Record<string,unknown>)=>string;children:ReactNode;isNew?:boolean;isFading?:boolean;selected?:boolean;onNewItemHandled:(itemId:string)=>void}){
+function MappedItem({itemId,itemNumber,kind,template,values,project,projectId,liveBoard,t,children,isNew=false,isFading=false,selected=false,onNewItemHandled}:{itemId:string;itemNumber?:string;kind:OnAirGraphicKind;template:string;values:Record<string,string>;project:MosProject|null;projectId:string|null;liveBoard:LiveBoardSnapshot|null;t:(key:string,options?:Record<string,unknown>)=>string;children:ReactNode;isNew?:boolean;isFading?:boolean;selected?:boolean;onNewItemHandled:(itemId:string)=>void}){
  const [sending,setSending]=useState(false)
  const [playbackResult,setPlaybackResult]=useState<'failed'|'queued'|'completed'|null>(null)
  const hasCsvTemplate=typeof template==='string'&&Boolean(template.trim())
@@ -393,7 +420,7 @@ function MappedItem({itemId,kind,template,values,project,projectId,liveBoard,t,c
  const playbackLabel=sending?t('playback.playing'):t(`playback.${action}`)
  const playbackTitle=disableReason?t(`playback.${disableReason}`):playbackResult?t(`playback.${playbackResult}`):playbackLabel
   const templateLabel=hasCsvTemplate?template:t('mappings.templateMissing')
-  return <div className={`onair-item${isOnAir?' is-onair':''}${isSuspended?' is-suspended':''}${isNew?' is-new':''}${isFading?' is-fading':''}${selected?' is-selected':''}`} data-onair-item-id={itemId} role="group" tabIndex={0} aria-keyshortcuts="ArrowUp ArrowDown Space"><div className="onair-item-heading"><div className="onair-item-copy">{children}</div><div className="onair-item-actions">{isSuspended&&<span className="onair-suspended-badge">{t('playback.suspended')}</span>}<button className={`onair-playback${sending?' is-busy':''}`} type="button" disabled={Boolean(disableReason)} onClick={()=>void playItem()} aria-label={playbackLabel} title={playbackTitle} tabIndex={-1}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{action==='resume'?<><path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M18 3v3h-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="m9.5 8.5 6 3.5-6 3.5z"/></>:<path d="M8 5v14l11-7z"/>}</svg></button><span className={`onair-template${hasCsvTemplate?'':' onair-template-missing'}`} title={hasCsvTemplate?template:t('mappings.templateMissing')}>{templateLabel}</span></div></div>
+  return <div className={`onair-item${isOnAir?' is-onair':''}${isSuspended?' is-suspended':''}${isNew?' is-new':''}${isFading?' is-fading':''}${selected?' is-selected':''}`} data-onair-item-id={itemId} data-onair-item-number={itemNumber} role="group" tabIndex={0} aria-keyshortcuts={itemNumber!==undefined?'0 1 2 3 4 5 6 7 8 9 ArrowUp ArrowDown Space':'ArrowUp ArrowDown Space'}><div className="onair-item-heading"><div className="onair-item-copy">{children}</div><div className="onair-item-actions">{isSuspended&&<span className="onair-suspended-badge">{t('playback.suspended')}</span>}<button className={`onair-playback${sending?' is-busy':''}`} type="button" disabled={Boolean(disableReason)} onClick={()=>void playItem()} aria-label={playbackLabel} title={playbackTitle} tabIndex={-1}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{action==='resume'?<><path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M18 3v3h-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="m9.5 8.5 6 3.5-6 3.5z"/></>:<path d="M8 5v14l11-7z"/>}</svg></button><span className={`onair-template${hasCsvTemplate?'':' onair-template-missing'}`} title={hasCsvTemplate?template:t('mappings.templateMissing')}>{templateLabel}</span></div></div>
  </div>
 }
 
